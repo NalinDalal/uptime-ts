@@ -52,5 +52,11 @@ pnpm dev
 
 ![des1](./Sys-des-1.png)
 ![des2](./sys-des-2.png)
+![des3](./sys-des-3.jpg)
 
 start writing the code
+
+so basically started wrting backend in `apps/api/`
+init with a express backend, stores website for now
+
+wrote the prisma client in packages so that the db can be shared
