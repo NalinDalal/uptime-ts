@@ -29,7 +29,7 @@ describe("Website gets created", () => {
   });
 
   it("Website is created if url is present", async () => {
-        console.log(token)
+    console.log(token);
     const response = await axios.post(
       `${BASE_URL}/website`,
       {
@@ -39,22 +39,83 @@ describe("Website gets created", () => {
         headers: {
           Authorization: token,
         },
-      }
+      },
     );
     expect(response.data.id).not.toBeNull();
   });
 
-     it("Website is not created if header not is present", async () => {
-    try{const response = await axios.post(
+  it("Website is not created if header not is present", async () => {
+    try {
+      const response = await axios.post(`${BASE_URL}/website`, {
+        url: "https://google.com",
+      });
+      expect(false, "Website shouldn't be created if no auth header");
+    } catch (e) {}
+  });
+});
+
+describe("Can fetch website", () => {
+  let token1: string, userId1: string;
+  let token2: string, userId2: string;
+  beforeAll(async () => {
+    const user1 = await createUser();
+    const user2 = await createUser();
+    token1 = user1.jwt;
+    userId1 = user1.id;
+    token2 = user2.jwt;
+    userId2 = user2.id;
+  });
+
+  it("is able is retch a website that user created", async () => {
+    const websiteResponse = await axios.post(
       `${BASE_URL}/website`,
       {
         url: "https://google.com",
-      }
+      },
+      {
+        headers: {
+          Authorization: token1,
+        },
+      },
     );
-    expect(false,"Website shouldn't be created if no auth header");
-  }catch(e){
+    const getWebsiteResponse = await axios.get(
+      `${BASE_URL}/status/${websiteResponse.data.id}`,
+      {
+        headers: {
+          Authorization: token1,
+        },
+      },
+    );
+    expect(getWebsiteResponse.data.website.id).toBe(websiteResponse.data.id);
+    expect(getWebsiteResponse.data.website.user_id).toBe(userId1);
+  });
 
-        }};
-
-
+  it("cant access website created by other user", async () => {
+    //create with token 1, fetch with token2
+    const websiteResponse = await axios.post(
+      `${BASE_URL}/website`,
+      {
+        url: "https://google.com",
+      },
+      {
+        headers: {
+          Authorization: token1,
+        },
+      },
+    );
+    try {
+      const getWebsiteResponse = await axios.get(
+        `${BASE_URL}/status/${websiteResponse.data.id}`,
+        {
+          headers: {
+            Authorization: token1,
+          },
+        },
+      );
+      expect(
+        false,
+        "shouldn't be able to access website created by different user",
+      );
+    } catch (e) {}
+  });
 });
