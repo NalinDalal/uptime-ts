@@ -1,10 +1,11 @@
+import jwt from "jsonwebtoken";
 import express from "express";
 const app = express();
 import { prismaClient } from "../../packages/store/index";
-
+import { authMiddleware } from "./middleware";
 app.use(express.json());
 
-app.post("/website", async (req, res) => {
+app.post("/website", authMiddleware, async (req, res) => {
   if (!req.body.url) {
     res.status(411).json({});
     return;
@@ -12,7 +13,8 @@ app.post("/website", async (req, res) => {
   const website = await prismaClient.website.create({
     data: {
       url: req.body.url,
-      timeAdded: new Date(),
+      time_added: new Date(),
+      user_id: "ads",
     },
   });
 
@@ -21,12 +23,32 @@ app.post("/website", async (req, res) => {
   });
 });
 
-app.get("/status/:websiteId", (req, res) => {
-  const data = AuthInput.safeParse(req.body.data);
-  if (!data.success) {
-    res.status(403).send("");
+app.get("/status/:websiteId", authMiddleware, (req, res) => {
+  const website = prismaClient.website.findFirst({
+    where: {
+      user_id: req.userId!,
+      id: req.params.websiteId,
+    },
+    include: {
+      ticks: {
+        orderBy: [
+          {
+            createdAt: "desc",
+          },
+        ],
+        take: 1,
+      },
+    },
+  });
+
+  if (!website) {
+    res.status(409).json({
+      message: "Website Not Found",
+    });
     return;
   }
+
+  res.json({ website });
 });
 
 app.get("/user/signup", async (req, res) => {

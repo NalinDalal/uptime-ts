@@ -24,7 +24,7 @@ model website {
   id            String  @id    @default(uuid()) 
   url           String
   user_id       String
-  timeAdded     DateTime
+  time_added     DateTime
   ticks         website_tick[]
   user          user    @relation(fields:[user_id],references:[id])
 }
