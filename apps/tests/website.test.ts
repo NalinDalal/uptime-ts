@@ -1,8 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import axios from "axios";
 import { createUser } from "./testUtils.ts";
-
-let BASE_URL = "http://localhost:3001";
+import { BACKEND_URL } from "./config.ts";
 
 describe("Website gets created", () => {
   let jwt: string, token: string;
@@ -16,7 +15,7 @@ describe("Website gets created", () => {
   it("Website not created if url is not present", async () => {
     try {
       await axios.post(
-        `${BASE_URL}/website`,
+        `${BACKEND_URL}/website`,
         {},
         {
           headers: {
@@ -31,7 +30,7 @@ describe("Website gets created", () => {
   it("Website is created if url is present", async () => {
     console.log(token);
     const response = await axios.post(
-      `${BASE_URL}/website`,
+      `${BACKEND_URL}/website`,
       {
         url: "https://google.com",
       },
@@ -68,7 +67,7 @@ describe("Can fetch website", () => {
 
   it("is able is retch a website that user created", async () => {
     const websiteResponse = await axios.post(
-      `${BASE_URL}/website`,
+      `${BACKEND_URL}/website`,
       {
         url: "https://google.com",
       },
@@ -93,7 +92,7 @@ describe("Can fetch website", () => {
   it("cant access website created by other user", async () => {
     //create with token 1, fetch with token2
     const websiteResponse = await axios.post(
-      `${BASE_URL}/website`,
+      `${BACKEND_URL}/website`,
       {
         url: "https://google.com",
       },
@@ -105,7 +104,7 @@ describe("Can fetch website", () => {
     );
     try {
       const getWebsiteResponse = await axios.get(
-        `${BASE_URL}/status/${websiteResponse.data.id}`,
+        `${BACKEND_URL}/status/${websiteResponse.data.id}`,
         {
           headers: {
             Authorization: token1,
