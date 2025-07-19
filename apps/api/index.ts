@@ -23,8 +23,8 @@ app.post("/website", authMiddleware, async (req, res) => {
   });
 });
 
-app.get("/status/:websiteId", authMiddleware, (req, res) => {
-  const website = prismaClient.website.findFirst({
+app.get("/status/:websiteId", authMiddleware, async (req, res) => {
+  const website = await prismaClient.website.findFirst({
     where: {
       user_id: req.userId!,
       id: req.params.websiteId,
@@ -36,7 +36,7 @@ app.get("/status/:websiteId", authMiddleware, (req, res) => {
             createdAt: "desc",
           },
         ],
-        take: 1,
+        take: 10,
       },
     },
   });
