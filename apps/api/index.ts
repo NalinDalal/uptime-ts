@@ -97,6 +97,17 @@ app.get("/user/signin", async (req, res) => {
   res.json({ jwt: token });
 });
 
+app.get("/websites", authMiddleware, async (req, res) => {
+  const websites = await prismaClient.website.findMany({
+    where: {
+      user_id: req.userId,
+    },
+  });
+  res.json({
+    websites,
+  });
+});
+
 console.log("Listening on port 3001");
 console.log(
   "Send post request on `localhost:3001/user/signup` with username and password as input",

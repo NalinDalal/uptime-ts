@@ -118,3 +118,36 @@ describe("Can fetch website", () => {
     } catch (e) {}
   });
 });
+
+describe("should be able to get all websites",()=>{
+    let token:string,userId:string;
+    beforeAll(async()=>{
+        const user1=await createUser();
+        token=user1.jwt;
+        userId=user1.id;
+
+        
+    });
+    it("can fetch its own set of websites",async()=>{
+        const websiteResponse=await axios.get(`${BASE_URL}/website`,{
+            url:'https://google.com'},{
+                headers:{
+                    Authorization:token
+                }
+            }
+        })
+        await axios.get(`${BASE_URL}/website`,{
+            url:'https://facebook.com'},{
+                headers:{
+                    Authorization:token
+                }
+            }
+        })
+           const response= await axios.get(`${BASE_URL}/website`,{
+                headers:{
+                    Authorization:token
+                }
+            })
+        expect(response.data.website.length==2,"Incorrect no of wensite created")
+    })
+})
