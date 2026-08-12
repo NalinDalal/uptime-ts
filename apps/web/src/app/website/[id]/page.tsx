@@ -3,6 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { api, getToken, type WebsiteWithTicks, type TickStatus } from "@/lib/api";
 
 const STATUS_STYLES: Record<TickStatus, string> = {
@@ -11,21 +21,25 @@ const STATUS_STYLES: Record<TickStatus, string> = {
     Unknown: "bg-zinc-600",
 };
 
-const REGION_COLORS = [
-    "border-l-sky-400",
-    "border-l-violet-400",
-    "border-l-amber-400",
-    "border-l-rose-400",
-    "border-l-teal-400",
-    "border-l-orange-400",
-];
+const REGION_COLORS_INDEX: Record<string, number> = {};
+let regionColorCounter = 0;
 
 function getRegionColor(regionId: string) {
-    let hash = 0;
-    for (let i = 0; i < regionId.length; i++) {
-        hash = regionId.charCodeAt(i) + ((hash << 5) - hash);
+    if (!(regionId in REGION_COLORS_INDEX)) {
+        REGION_COLORS_INDEX[regionId] = regionColorCounter++;
     }
-    return REGION_COLORS[Math.abs(hash) % REGION_COLORS.length];
+    return REGION_COLORS[REGION_COLORS_INDEX[regionId] % REGION_COLORS.length];
+}
+
+const REGION_CHART_COLORS: Record<string, string> = {};
+
+function getRegionChartColor(regionId: string): string {
+    if (!(regionId in REGION_CHART_COLORS)) {
+        const idx = Object.keys(REGION_CHART_COLORS).length;
+        const palette = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#06b6d4", "#f97316"];
+        REGION_CHART_COLORS[regionId] = palette[idx % palette.length];
+    }
+    return REGION_CHART_COLORS[regionId];
 }
 
 export default function WebsiteDetail() {
@@ -93,6 +107,18 @@ export default function WebsiteDetail() {
 
     const maxMs = Math.max(...ticks.map((t) => t.response_time_ms), 1);
 
+    const regions = Array.from(new Set(ticks.map((t) => t.region_id)));
+    const chartData = ticks
+        .slice()
+        .reverse()
+        .map((t) => ({
+            time: new Date(t.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            fullTime: new Date(t.created_at).toLocaleString(),
+            [t.region_id]: t.response_time_ms,
+            [`${t.region_id}_status`]: t.status,
+            [`${t.region_id}_http`]: t.http_status,
+        }));
+
     return (
         <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
             <Link href="/" className="text-sm text-zinc-400 hover:text-zinc-200">
@@ -157,6 +183,88 @@ export default function WebsiteDetail() {
                             </span>
                         </div>
                     ))}
+                </div>
+            </section>
+
+            <section className="mt-12">
+                <h2 className="text-sm font-medium text-zinc-400">
+                    Response time trend
+                </h2>
+                <div className="mt-3 h-64 w-full rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+                    {ticks.length === 0 ? (
+                        <p className="text-sm text-zinc-500">No data yet.</p>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                                <XAxis
+                                    dataKey="time"
+                                    stroke="#71717a"
+                                    tick={{ fill: "#a1a1aa", fontSize: 11 }}
+                                    tickLine={{ stroke: "#3f3f46" }}
+                                />
+                                <YAxis
+                                    stroke="#71717a"
+                                    tick={{ fill: "#a1a1aa", fontSize: 11 }}
+                                    tickLine={{ stroke: "#3f3f46" }}
+                                    label={{
+                                        value: "ms",
+                                        angle: -90,
+                                        position: "insideLeft",
+                                        fill: "#71717a",
+                                        fontSize: 11,
+                                    }}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: "#18181b",
+                                        border: "1px solid #27272a",
+                                        borderRadius: "0.5rem",
+                                        color: "#e4e4e7",
+                                    }}
+                                    labelStyle={{ color: "#a1a1aa" }}
+                                />
+                                <Legend
+                                    wrapperStyle={{ color: "#a1a1aa", fontSize: 12 }}
+                                />
+                                {regions.map((region) => (
+                                    <Line
+                                        key={region}
+                                        type="monotone"
+                                        dataKey={region}
+                                        stroke={getRegionChartColor(region)}
+                                        strokeWidth={2}
+                                        dot={(props) => {
+                                            const status = props.payload[`${region}_status`];
+                                            if (status === "Down" || status === "Unknown") {
+                                                return (
+                                                    <circle
+                                                        cx={props.cx}
+                                                        cy={props.cy}
+                                                        r={4}
+                                                        fill="#ef4444"
+                                                        stroke="#18181b"
+                                                        strokeWidth={2}
+                                                    />
+                                                );
+                                            }
+                                            return (
+                                                <circle
+                                                    cx={props.cx}
+                                                    cy={props.cy}
+                                                    r={3}
+                                                    fill={getRegionChartColor(region)}
+                                                    stroke="#18181b"
+                                                    strokeWidth={1}
+                                                />
+                                            );
+                                        }}
+                                        activeDot={{ r: 5 }}
+                                    />
+                                ))}
+                            </LineChart>
+                        </ResponsiveContainer>
+                    )}
                 </div>
             </section>
         </main>
