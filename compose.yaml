@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: uptime-postgres
+    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -19,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: uptime-redis
+    container_name: redis
     restart: unless-stopped
     ports:
       - "6379:6379"
