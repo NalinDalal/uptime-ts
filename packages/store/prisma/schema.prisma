@@ -27,10 +27,23 @@ model website {
     url        String
     user_id    String
     time_added DateTime
-    component String?
+    component  String?
     ticks      website_tick[]
     incidents  incident[]
+    maintenances maintenance[]
     user       user           @relation(fields: [user_id], references: [id])
+}
+
+model maintenance {
+    id          String         @id @default(uuid())
+    website_id  String
+    title       String
+    description String
+    starts_at   DateTime
+    ends_at     DateTime?
+    status      maintenance_status @default(scheduled)
+    created_at  DateTime       @default(now())
+    website     website        @relation(fields: [website_id], references: [id])
 }
 
 model incident {
@@ -67,4 +80,10 @@ enum website_status {
     Up
     Down
     Unknown
+}
+
+enum maintenance_status {
+    scheduled
+    in_progress
+    completed
 }

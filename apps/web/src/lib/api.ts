@@ -31,6 +31,17 @@ export type Incident = {
   website: { url: string };
 };
 
+export type Maintenance = {
+  id: string;
+  website_id: string;
+  title: string;
+  description: string;
+  starts_at: string;
+  ends_at: string | null;
+  status: string;
+  website: { url: string };
+};
+
 export type Periods = { d1: number | null; d7: number | null; d30: number | null };
 
 export type WebsiteStat = {
@@ -48,6 +59,7 @@ export type ComponentStatus = {
 export type PublicStatusResponse = {
   components: ComponentStatus[];
   incidents: Incident[];
+  maintenances: Maintenance[];
   websites: WebsiteWithTicks[];
   stats: WebsiteStat[];
 };
@@ -113,6 +125,8 @@ export const api = {
     request<{ website: WebsiteWithTicks }>(`/status/${id}`),
   getPublicStatus: (userId: string) =>
     request<PublicStatusResponse>(`/public/status/${userId}`),
+  getMaintenances: () =>
+    request<{ maintenances: Maintenance[] }>("/maintenance"),
   getWebhook: () => request<{ url: string | null }>("/user/webhook"),
   setWebhook: (url: string) =>
     request<{ ok: true }>("/user/webhook", {

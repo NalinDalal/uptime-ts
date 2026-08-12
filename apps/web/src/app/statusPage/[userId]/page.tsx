@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { api, type WebsiteWithTicks, type TickStatus, type Incident, type ComponentStatus } from "@/lib/api";
+import { api, type WebsiteWithTicks, type TickStatus, type Incident, type ComponentStatus, type Maintenance } from "@/lib/api";
 
 const TICK_COLORS: Record<TickStatus, string> = {
   Up: "bg-emerald-500",
@@ -14,6 +14,12 @@ const STATUS_STYLES: Record<string, string> = {
   Up: "bg-emerald-500/15 text-emerald-400",
   Down: "bg-red-500/15 text-red-400",
   Unknown: "bg-zinc-500/15 text-zinc-400",
+};
+
+const MAINTENANCE_STATUS_STYLES: Record<string, string> = {
+  scheduled: "bg-sky-500/15 text-sky-400",
+  in_progress: "bg-amber-500/15 text-amber-400",
+  completed: "bg-zinc-500/15 text-zinc-400",
 };
 
 function MonitorCard({ website }: { website: WebsiteWithTicks }) {
@@ -71,10 +77,18 @@ function UptimeBadge({ value }: { value: number | null }) {
   return <span className={`text-xs font-medium ${color}`}>{value.toFixed(2)}%</span>;
 }
 
+function formatMaintenanceTime(iso: string | null | undefined) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString();
+}
+
 export default function StatusPageView() {
   const params = useParams<{ userId: string }>();
   const [components, setComponents] = useState<ComponentStatus[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
@@ -82,6 +96,7 @@ export default function StatusPageView() {
       const res = await api.getPublicStatus(params.userId);
       setComponents(res.components);
       setIncidents(res.incidents);
+      setMaintenances(res.maintenances);
       setError("");
     } catch {
       setError("Could not load status");
@@ -116,6 +131,42 @@ export default function StatusPageView() {
       </div>
 
       {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+
+      {maintenances.length > 0 && (
+        <section className="mt-8 space-y-3">
+          <h2 className="text-sm font-medium text-zinc-400">Scheduled maintenance</h2>
+          <ul className="space-y-2">
+            {maintenances.map((m) => (
+              <li
+                key={m.id}
+                className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="truncate font-mono text-sm">{m.title}</span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                      MAINTENANCE_STATUS_STYLES[m.status] ?? MAINTENANCE_STATUS_STYLES.scheduled
+                    }`}
+                  >
+                    {m.status === "in_progress"
+                      ? "In progress"
+                      : m.status === "scheduled"
+                        ? "Scheduled"
+                        : m.status}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {m.website.url} · {formatMaintenanceTime(m.starts_at)}
+                  {m.ends_at ? ` – ${formatMaintenanceTime(m.ends_at)}` : ""}
+                </p>
+                {m.description && (
+                  <p className="mt-1 text-xs text-zinc-400">{m.description}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="mt-8 space-y-8">
         {components.length === 0 && !error && (

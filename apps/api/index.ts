@@ -169,6 +169,18 @@ app.get("/public/status/:userId", async (req, res) => {
     orderBy: { started_at: "desc" },
     take: 10,
   });
+  const maintenances = await prismaClient.maintenance.findMany({
+    where: {
+      website: { user_id: String(req.params.userId) },
+      starts_at: { lte: new Date() },
+      status: { in: ["scheduled", "in_progress"] },
+    },
+    include: {
+      website: { select: { url: true } },
+    },
+    orderBy: { starts_at: "asc" },
+    take: 20,
+  });
 
   const websiteIds = websites.map((w) => w.id);
   const now = new Date();
@@ -285,6 +297,7 @@ app.get("/public/status/:userId", async (req, res) => {
   res.json({
     components,
     incidents,
+    maintenances,
     websites,
     stats: websiteStats,
   });
@@ -309,6 +322,62 @@ app.patch("/user/webhook", authMiddleware, async (req, res) => {
     data: { webhook_url: url },
   });
   res.json({ ok: true });
+});
+
+app.post("/maintenance", authMiddleware, async (req, res) => {
+  const { website_id, title, description, starts_at, ends_at } = req.body;
+  if (!website_id || !title || !starts_at) {
+    res.status(411).json({});
+    return;
+  }
+  const website = await prismaClient.website.findFirst({
+    where: { id: website_id, user_id: req.userId! },
+  });
+  if (!website) {
+    res.status(409).json({ message: "Website not found" });
+    return;
+  }
+  const maintenance = await prismaClient.maintenance.create({
+    data: {
+      website_id,
+      title,
+      description: description || "",
+      starts_at: new Date(starts_at),
+      ends_at: ends_at ? new Date(ends_at) : null,
+      status: "scheduled",
+    },
+  });
+  res.json(maintenance);
+});
+
+app.get("/maintenance", authMiddleware, async (req, res) => {
+  const maintenances = await prismaClient.maintenance.findMany({
+    where: {
+      website: { user_id: req.userId! },
+    },
+    include: {
+      website: { select: { url: true } },
+    },
+    orderBy: { starts_at: "desc" },
+    take: 50,
+  });
+  res.json({ maintenances });
+});
+
+app.get("/public/maintenance/:userId", async (req, res) => {
+  const maintenances = await prismaClient.maintenance.findMany({
+    where: {
+      website: { user_id: String(req.params.userId) },
+      starts_at: { lte: new Date() },
+      status: { in: ["scheduled", "in_progress"] },
+    },
+    include: {
+      website: { select: { url: true } },
+    },
+    orderBy: { starts_at: "asc" },
+    take: 20,
+  });
+  res.json({ maintenances });
 });
 
 console.log("Listening on port 3001");
