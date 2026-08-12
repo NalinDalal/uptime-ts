@@ -16,9 +16,9 @@ import {
 import { api, getToken, type WebsiteWithTicks, type TickStatus } from "@/lib/api";
 
 const STATUS_STYLES: Record<TickStatus, string> = {
-    Up: "bg-emerald-500",
-    Down: "bg-red-500",
-    Unknown: "bg-zinc-600",
+    Up: "bg-success",
+    Down: "bg-danger",
+    Unknown: "bg-muted",
 };
 
 const REGION_COLORS_INDEX: Record<string, number> = {};
@@ -37,6 +37,19 @@ function getRegionColor(regionId: string) {
     if (!(regionId in REGION_COLORS_INDEX)) {
         REGION_COLORS_INDEX[regionId] = regionColorCounter++;
     }
+    return REGION_COLORS[REGION_COLORS_INDEX[regionId] % REGION_COLORS.length];
+}
+
+const REGION_CHART_COLORS: Record<string, string> = {};
+
+function getRegionChartColor(regionId: string): string {
+    if (!(regionId in REGION_CHART_COLORS)) {
+        const idx = Object.keys(REGION_CHART_COLORS).length;
+        const palette = ["#3FB950", "#58A6FF", "#D29922", "#F85149", "#06b6d4", "#f97316"];
+        REGION_CHART_COLORS[regionId] = palette[idx % palette.length];
+    }
+    return REGION_CHART_COLORS[regionId];
+}
     return REGION_COLORS[REGION_COLORS_INDEX[regionId] % REGION_COLORS.length];
 }
 
@@ -90,7 +103,7 @@ export default function WebsiteDetail() {
     if (!website) {
         return (
             <main className="flex flex-1 items-center justify-center p-8">
-                <p className="text-sm text-zinc-500">Loading...</p>
+                <p className="text-sm text-muted">Loading...</p>
             </main>
         );
     }
@@ -127,27 +140,27 @@ export default function WebsiteDetail() {
 
     return (
         <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-            <Link href="/" className="text-sm text-zinc-400 hover:text-zinc-200">
+            <Link href="/" className="text-sm text-muted hover:text-text">
                 ← Back
             </Link>
 
             <div className="mt-6 flex items-center justify-between">
                 <div>
                     <h1 className="font-mono text-xl font-semibold">{website.url}</h1>
-                    <p className="mt-1 text-sm text-zinc-500">
+                    <p className="mt-1 text-sm text-muted">
                         Checks from 3 regions · {uptime}% up (last {ticks.length} checks)
                     </p>
-                    <p className="mt-0.5 text-xs text-zinc-600">
+                    <p className="mt-0.5 text-xs text-muted/60">
                         avg {avgLatency}ms · p95 {p95Latency}ms · last updated {lastUpdated}
                     </p>
                 </div>
                 {latest && (
                     <span
                         className={`shrink-0 rounded-full px-3 py-1 text-sm font-medium ${latest.status === "Up"
-                                ? "bg-emerald-500/15 text-emerald-400"
+                                ? "bg-success/15 text-success"
                                 : latest.status === "Down"
-                                    ? "bg-red-500/15 text-red-400"
-                                    : "bg-zinc-500/15 text-zinc-400"
+                                    ? "bg-danger/15 text-danger"
+                                    : "bg-muted/15 text-muted"
                             }`}
                     >
                         {latest.status}
@@ -156,12 +169,12 @@ export default function WebsiteDetail() {
             </div>
 
             <section className="mt-10">
-                <h2 className="text-sm font-medium text-zinc-400">
+                <h2 className="text-sm font-medium text-muted">
                     Recent checks ({ticks.length})
                 </h2>
                 <div className="mt-3 flex items-end gap-1.5">
                     {ticks.length === 0 && (
-                        <p className="text-sm text-zinc-500">
+                        <p className="text-sm text-muted">
                             No checks yet — the worker pings this website every few minutes.
                         </p>
                     )}
@@ -179,13 +192,11 @@ export default function WebsiteDetail() {
                                     className={`w-full rounded-sm border-l-2 ${getRegionColor(t.region_id)} ${STATUS_STYLES[t.status]} opacity-80 group-hover:opacity-100`}
                                 />
                             </div>
-                            <span className="text-[10px] text-zinc-600">
+                            <span className="text-[10px] text-muted">
                                 {t.response_time_ms}ms
                             </span>
-                            <span className="absolute -top-7 z-10 hidden whitespace-nowrap rounded bg-zinc-800 px-2 py-1 text-[10px] text-zinc-200 group-hover:block">
-                                {t.status}
-                                {t.http_status ? ` · HTTP ${t.http_status}` : ""} · {t.response_time_ms}ms ·{" "}
-                                {new Date(t.created_at).toLocaleString()} · {t.region_id}
+                            <span className="absolute -top-7 z-10 hidden whitespace-nowrap rounded bg-surface-elevated px-2 py-1 text-[10px] text-text group-hover:block">
+                                {t.status}{t.http_status ? ` · HTTP ${t.http_status}` : ""} · {t.response_time_ms}ms · {new Date(t.created_at).toLocaleString()} · {t.region_id}
                             </span>
                         </div>
                     ))}
@@ -193,45 +204,45 @@ export default function WebsiteDetail() {
             </section>
 
             <section className="mt-12">
-                <h2 className="text-sm font-medium text-zinc-400">
+                <h2 className="text-sm font-medium text-muted">
                     Response time trend
                 </h2>
-                <div className="mt-3 h-64 w-full rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+                <div className="mt-3 h-64 w-full rounded-lg border border-border bg-surface p-4">
                     {ticks.length === 0 ? (
-                        <p className="text-sm text-zinc-500">No data yet.</p>
+                        <p className="text-sm text-muted">No data yet.</p>
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                                 <XAxis
                                     dataKey="time"
-                                    stroke="#71717a"
-                                    tick={{ fill: "#a1a1aa", fontSize: 11 }}
-                                    tickLine={{ stroke: "#3f3f46" }}
+                                    stroke="var(--color-muted)"
+                                    tick={{ fill: "var(--color-muted)", fontSize: 11 }}
+                                    tickLine={{ stroke: "var(--color-border)" }}
                                 />
                                 <YAxis
-                                    stroke="#71717a"
-                                    tick={{ fill: "#a1a1aa", fontSize: 11 }}
-                                    tickLine={{ stroke: "#3f3f46" }}
+                                    stroke="var(--color-muted)"
+                                    tick={{ fill: "var(--color-muted)", fontSize: 11 }}
+                                    tickLine={{ stroke: "var(--color-border)" }}
                                     label={{
                                         value: "ms",
                                         angle: -90,
                                         position: "insideLeft",
-                                        fill: "#71717a",
+                                        fill: "var(--color-muted)",
                                         fontSize: 11,
                                     }}
                                 />
                                 <Tooltip
                                     contentStyle={{
-                                        backgroundColor: "#18181b",
-                                        border: "1px solid #27272a",
+                                        backgroundColor: "var(--color-surface-elevated)",
+                                        border: "1px solid var(--color-border)",
                                         borderRadius: "0.5rem",
-                                        color: "#e4e4e7",
+                                        color: "var(--color-text)",
                                     }}
-                                    labelStyle={{ color: "#a1a1aa" }}
+                                    labelStyle={{ color: "var(--color-muted)" }}
                                 />
                                 <Legend
-                                    wrapperStyle={{ color: "#a1a1aa", fontSize: 12 }}
+                                    wrapperStyle={{ color: "var(--color-muted)", fontSize: 12 }}
                                 />
                                 {regions.map((region) => (
                                     <Line
@@ -248,8 +259,8 @@ export default function WebsiteDetail() {
                                                         cx={props.cx}
                                                         cy={props.cy}
                                                         r={4}
-                                                        fill="#ef4444"
-                                                        stroke="#18181b"
+                                                        fill="var(--color-danger)"
+                                                        stroke="var(--color-surface)"
                                                         strokeWidth={2}
                                                     />
                                                 );
@@ -260,7 +271,7 @@ export default function WebsiteDetail() {
                                                     cy={props.cy}
                                                     r={3}
                                                     fill={getRegionChartColor(region)}
-                                                    stroke="#18181b"
+                                                    stroke="var(--color-surface)"
                                                     strokeWidth={1}
                                                 />
                                             );

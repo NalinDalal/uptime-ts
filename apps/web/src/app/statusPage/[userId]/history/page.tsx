@@ -28,21 +28,21 @@ function TimelineItem({ item }: { item: HistoryItem }) {
           className={`h-3 w-3 rounded-full border-2 ${
             isIncident
               ? isOngoing
-                ? "border-red-500 bg-red-500/20"
-                : "border-emerald-500 bg-emerald-500/20"
-              : "border-sky-500 bg-sky-500/20"
+                ? "border-danger bg-danger/20"
+                : "border-success bg-success/20"
+              : "border-accent bg-accent/20"
           }`}
         />
-        <div className="mt-2 w-px flex-1 bg-zinc-800" />
+        <div className="mt-2 w-px flex-1 bg-border" />
       </div>
       <div className="flex-1 pt-0">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-zinc-200">
+            <p className="text-sm font-medium text-text">
               {isIncident ? "Incident" : item.title}
             </p>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              <Link href={item.website_url} className="text-emerald-400 hover:text-emerald-300">
+            <p className="mt-0.5 text-xs text-muted">
+              <Link href={item.website_url} className="text-accent hover:text-accent/80">
                 {item.website_url}
               </Link>
               {isIncident && item.region_id ? ` · ${item.region_id}` : ""}
@@ -52,17 +52,17 @@ function TimelineItem({ item }: { item: HistoryItem }) {
             className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
               isIncident
                 ? isOngoing
-                  ? "bg-red-500/15 text-red-400"
-                  : "bg-emerald-500/15 text-emerald-400"
+                  ? "bg-danger/15 text-danger"
+                  : "bg-success/15 text-success"
                 : item.status === "in_progress"
-                  ? "bg-amber-500/15 text-amber-400"
-                  : "bg-sky-500/15 text-sky-400"
+                  ? "bg-warning/15 text-warning"
+                  : "bg-accent/15 text-accent"
             }`}
           >
             {isIncident ? (isOngoing ? "Ongoing" : "Resolved") : item.status === "in_progress" ? "In progress" : "Scheduled"}
           </span>
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
           <span>Started {started.toLocaleString()}</span>
           <span>
             {isOngoing ? "Ongoing" : `Resolved · lasted ${formatDuration(item.started_at, item.ended_at)}`}
@@ -95,16 +95,16 @@ export default function HistoryPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
       <div className="flex items-center gap-3">
-        <Link href={`/statusPage/${params.userId}`} className="text-sm text-zinc-400 hover:text-zinc-200">
+        <Link href={`/statusPage/${params.userId}`} className="text-sm text-muted hover:text-text">
           ← Back
         </Link>
         <h1 className="text-xl font-semibold tracking-tight">Status history</h1>
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-4 text-sm text-danger">{error}</p>}
 
       {history.length === 0 && !error && (
-        <p className="mt-8 text-sm text-zinc-500">No incidents or maintenance recorded.</p>
+        <p className="mt-8 text-sm text-muted">No incidents or maintenance recorded.</p>
       )}
 
       <ul className="mt-8">

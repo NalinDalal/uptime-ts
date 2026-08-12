@@ -3,8 +3,21 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-background: #0D1117;
+  --color-surface: #161B22;
+  --color-surface-elevated: #1C2128;
+  --color-border: #30363D;
+  --color-text: #C9D1D9;
+  --color-muted: #8B949E;
+  --color-accent: #58A6FF;
+  --color-success: #3FB950;
+  --color-warning: #D29922;
+  --color-danger: #F85149;
 }
 
 body {
   font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-text);
 }

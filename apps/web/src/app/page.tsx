@@ -6,11 +6,11 @@ import Link from "next/link";
 import { api, clearToken, getToken, type Website, type TickStatus, type Incident } from "@/lib/api";
 
 function StatusPill({ status }: { status: TickStatus | undefined }) {
-    if (!status) return <span className="text-xs text-zinc-500">no checks yet</span>;
+    if (!status) return <span className="text-xs text-muted">no checks yet</span>;
     const styles = {
-        Up: "bg-emerald-500/15 text-emerald-400",
-        Down: "bg-red-500/15 text-red-400",
-        Unknown: "bg-zinc-500/15 text-zinc-400",
+        Up: "bg-success/15 text-success",
+        Down: "bg-danger/15 text-danger",
+        Unknown: "bg-muted/15 text-muted",
     }[status];
     return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${styles}`}>{status}</span>;
 }
@@ -106,21 +106,21 @@ export default function Dashboard() {
 
     return (
         <main className="flex flex-1 flex-col">
-            <header className="border-b border-zinc-900">
+            <header className="border-b border-border">
                 <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
                     <h1 className="text-lg font-semibold tracking-tight">
-                        Uptime <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 align-middle" />
+                        Uptime <span className="inline-block h-2 w-2 rounded-full bg-success align-middle" />
                     </h1>
                     <div className="flex items-center gap-4">
                         {latestUserId && (
                             <Link
                                 href={`/statusPage/${latestUserId}`}
-                                className="text-sm text-zinc-400 hover:text-zinc-200"
+                                className="text-sm text-muted hover:text-text"
                             >
                                 Public status page
                             </Link>
                         )}
-                        <button onClick={logout} className="text-sm text-zinc-400 hover:text-zinc-200">
+                        <button onClick={logout} className="text-sm text-muted hover:text-text">
                             Sign out
                         </button>
                     </div>
@@ -129,67 +129,67 @@ export default function Dashboard() {
 
             <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-8 space-y-8">
                 <section>
-                    <h2 className="text-sm font-medium text-zinc-400">Add monitor</h2>
+                    <h2 className="text-sm font-medium text-muted">Add monitor</h2>
                     <form onSubmit={addWebsite} className="mt-3 flex gap-2">
                         <input
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
                             placeholder="https://example.com"
-                            className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+                            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
                         />
                         <button
                             type="submit"
-                            className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-300"
+                            className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-background hover:brightness-110"
                         >
                             Add
                         </button>
                     </form>
-                    {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+                    {error && <p className="mt-2 text-sm text-danger">{error}</p>}
                 </section>
 
                 <section>
-                    <h2 className="text-sm font-medium text-zinc-400">
-                        Alerts <span className="text-zinc-600">— webhook on status change</span>
+                    <h2 className="text-sm font-medium text-muted">
+                        Alerts <span className="text-muted/60">— webhook on status change</span>
                     </h2>
                     <form onSubmit={saveWebhook} className="mt-3 flex gap-2">
                         <input
                             value={webhookUrl}
                             onChange={(e) => setWebhookUrl(e.target.value)}
                             placeholder="https://hooks.slack.com/services/..."
-                            className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+                            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
                         />
                         <button
                             type="submit"
-                            className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-300"
+                            className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-background hover:brightness-110"
                         >
                             Save
                         </button>
                     </form>
-                    {webhookError && <p className="mt-2 text-sm text-red-400">{webhookError}</p>}
+                    {webhookError && <p className="mt-2 text-sm text-danger">{webhookError}</p>}
                 </section>
 
                 <section>
-                    <h2 className="text-sm font-medium text-zinc-400">Incidents</h2>
+                    <h2 className="text-sm font-medium text-muted">Incidents</h2>
                     {incidents.length === 0 ? (
-                        <p className="mt-2 text-sm text-zinc-500">
+                        <p className="mt-2 text-sm text-muted">
                             No incidents — every check has been passing.
                         </p>
                     ) : (
-                        <ul className="mt-3 divide-y divide-zinc-900 rounded-lg border border-zinc-900">
+                        <ul className="mt-3 divide-y divide-border rounded-lg border border-border">
                             {incidents.map((inc) => (
                                 <li key={inc.id} className="px-4 py-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <span className="truncate font-mono text-sm">{inc.website.url}</span>
                                         <span
                                             className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${inc.ended_at
-                                                    ? "bg-emerald-500/15 text-emerald-400"
-                                                    : "bg-red-500/15 text-red-400"
+                                                    ? "bg-success/15 text-success"
+                                                    : "bg-danger/15 text-danger"
                                                 }`}
                                         >
                                             {inc.ended_at ? "Resolved" : "Ongoing"}
                                         </span>
                                     </div>
-                                    <p className="mt-1 text-xs text-zinc-500">
+                                    <p className="mt-1 text-xs text-muted">
                                         {inc.region_id} · started {formatTime(inc.started_at)}
                                         {inc.ended_at ? ` · lasted ${formatDuration(inc.started_at, inc.ended_at)}` : ""}
                                     </p>
@@ -200,18 +200,18 @@ export default function Dashboard() {
                 </section>
 
                 <section>
-                    <h2 className="text-sm font-medium text-zinc-400">Monitors</h2>
+                    <h2 className="text-sm font-medium text-muted">Monitors</h2>
                     {websites.length === 0 ? (
-                        <p className="mt-4 text-sm text-zinc-500">
+                        <p className="mt-4 text-sm text-muted">
                             No monitors yet. Add one above to start checking uptime.
                         </p>
                     ) : (
-                        <ul className="mt-3 divide-y divide-zinc-900 rounded-lg border border-zinc-900">
+                        <ul className="mt-3 divide-y divide-border rounded-lg border border-border">
                             {websites.map((w) => (
                                 <li key={w.id}>
                                     <Link
                                         href={`/website/${w.id}`}
-                                        className="flex items-center justify-between px-4 py-3 hover:bg-zinc-900/50"
+                                        className="flex items-center justify-between px-4 py-3 hover:bg-surface-elevated"
                                     >
                                         <span className="font-mono text-sm">{w.url}</span>
                                         <StatusPill status={w.ticks?.[0]?.status} />
