@@ -28,7 +28,17 @@ model website {
     user_id    String
     time_added DateTime
     ticks      website_tick[]
+    incidents  incident[]
     user       user           @relation(fields: [user_id], references: [id])
+}
+
+model incident {
+    id         String    @id @default(uuid())
+    website_id String
+    region_id  String
+    started_at DateTime  @default(now())
+    ended_at   DateTime?
+    website    website   @relation(fields: [website_id], references: [id])
 }
 
 model region {

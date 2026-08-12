@@ -97,6 +97,24 @@ async function fetchWebsite(url: string, websiteId: string) {
   });
 
   if (prev && prev.status !== status) {
+    if (status === "Down") {
+      await prismaClient.incident.create({
+        data: {
+          website_id: websiteId,
+          region_id: REGION_ID,
+        },
+      });
+    } else {
+      await prismaClient.incident.updateMany({
+        where: {
+          website_id: websiteId,
+          region_id: REGION_ID,
+          ended_at: null,
+        },
+        data: { ended_at: new Date() },
+      });
+    }
+
     const webhookUrl = await getWebhookUrl(websiteId);
     if (webhookUrl) {
       await sendAlert(

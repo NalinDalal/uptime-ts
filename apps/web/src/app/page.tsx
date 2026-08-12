@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, clearToken, getToken, type Website, type TickStatus } from "@/lib/api";
+import { api, clearToken, getToken, type Website, type TickStatus, type Incident } from "@/lib/api";
 
 function StatusPill({ status }: { status: TickStatus | undefined }) {
   if (!status) return <span className="text-xs text-zinc-500">no checks yet</span>;
@@ -22,6 +22,17 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookError, setWebhookError] = useState("");
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+
+  function formatTime(iso: string) {
+    return new Date(iso).toLocaleString();
+  }
+
+  function formatDuration(startIso: string, endIso: string) {
+    const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+    const mins = Math.max(1, Math.round(ms / 60000));
+    return `${mins} min${mins === 1 ? "" : "s"}`;
+  }
 
   const refresh = useCallback(async () => {
     try {
@@ -42,6 +53,15 @@ export default function Dashboard() {
     }
   }, []);
 
+  const refreshIncidents = useCallback(async () => {
+    try {
+      const res = await api.getIncidents();
+      setIncidents(res.incidents);
+    } catch {
+      // incidents are secondary; ignore failures
+    }
+  }, []);
+
   useEffect(() => {
     if (!getToken()) {
       router.replace("/auth");
@@ -49,9 +69,10 @@ export default function Dashboard() {
     }
     refresh(); // eslint-disable-line react-hooks/set-state-in-effect
     loadWebhook();
+    refreshIncidents();
     const id = setInterval(refresh, 10000);
     return () => clearInterval(id);
-  }, [refresh, loadWebhook, router]);
+  }, [refresh, refreshIncidents, loadWebhook, router]);
 
   async function saveWebhook(e: React.FormEvent) {
     e.preventDefault();
@@ -145,6 +166,38 @@ export default function Dashboard() {
             </button>
           </form>
           {webhookError && <p className="mt-2 text-sm text-red-400">{webhookError}</p>}
+        </section>
+
+        <section>
+          <h2 className="text-sm font-medium text-zinc-400">Incidents</h2>
+          {incidents.length === 0 ? (
+            <p className="mt-2 text-sm text-zinc-500">
+              No incidents — every check has been passing.
+            </p>
+          ) : (
+            <ul className="mt-3 divide-y divide-zinc-900 rounded-lg border border-zinc-900">
+              {incidents.map((inc) => (
+                <li key={inc.id} className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="truncate font-mono text-sm">{inc.website.url}</span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                        inc.ended_at
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : "bg-red-500/15 text-red-400"
+                      }`}
+                    >
+                      {inc.ended_at ? "Resolved" : "Ongoing"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {inc.region_id} · started {formatTime(inc.started_at)}
+                    {inc.ended_at ? ` · lasted ${formatDuration(inc.started_at, inc.ended_at)}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section>

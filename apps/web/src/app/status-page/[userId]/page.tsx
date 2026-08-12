@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { api, type WebsiteWithTicks, type TickStatus } from "@/lib/api";
+import { api, type WebsiteWithTicks, type TickStatus, type Incident } from "@/lib/api";
 
 const TICK_COLORS: Record<TickStatus, string> = {
   Up: "bg-emerald-500",
@@ -57,12 +57,14 @@ function MonitorCard({ website }: { website: WebsiteWithTicks }) {
 export default function StatusPageView() {
   const params = useParams<{ userId: string }>();
   const [websites, setWebsites] = useState<WebsiteWithTicks[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
     try {
       const res = await api.getPublicStatus(params.userId);
       setWebsites(res.websites);
+      setIncidents(res.incidents);
       setError("");
     } catch {
       setError("Could not load status");
@@ -108,6 +110,40 @@ export default function StatusPageView() {
           <MonitorCard key={w.id} website={w} />
         ))}
       </div>
+
+      {(incidents.length > 0 || error === "") && (
+        <section className="mt-12">
+          <h2 className="text-sm font-medium text-zinc-400">Incident history</h2>
+          {incidents.length === 0 ? (
+            <p className="mt-2 text-sm text-zinc-500">No incidents recorded.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-zinc-900 rounded-lg border border-zinc-900">
+              {incidents.map((inc) => (
+                <li key={inc.id} className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="truncate font-mono text-sm">{inc.website.url}</span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                        inc.ended_at
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : "bg-red-500/15 text-red-400"
+                      }`}
+                    >
+                      {inc.ended_at ? "Resolved" : "Ongoing"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {inc.region_id} · started {new Date(inc.started_at).toLocaleString()}
+                    {inc.ended_at
+                      ? ` · lasted ${Math.max(1, Math.round((new Date(inc.ended_at).getTime() - new Date(inc.started_at).getTime()) / 60000))} min`
+                      : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </main>
   );
 }

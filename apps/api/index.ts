@@ -118,6 +118,22 @@ app.get("/websites", authMiddleware, async (req, res) => {
   });
 });
 
+app.get("/incidents", authMiddleware, async (req, res) => {
+  const incidents = await prismaClient.incident.findMany({
+    where: {
+      website: {
+        user_id: req.userId,
+      },
+    },
+    include: {
+      website: { select: { url: true } },
+    },
+    orderBy: { started_at: "desc" },
+    take: 50,
+  });
+  res.json({ incidents });
+});
+
 app.get("/public/status/:userId", async (req, res) => {
   const websites = await prismaClient.website.findMany({
     where: {
@@ -134,8 +150,21 @@ app.get("/public/status/:userId", async (req, res) => {
       },
     },
   });
+  const incidents = await prismaClient.incident.findMany({
+    where: {
+      website: {
+        user_id: String(req.params.userId),
+      },
+    },
+    include: {
+      website: { select: { url: true } },
+    },
+    orderBy: { started_at: "desc" },
+    take: 10,
+  });
   res.json({
     websites,
+    incidents,
   });
 });
 

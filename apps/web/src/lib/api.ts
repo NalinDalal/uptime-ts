@@ -21,6 +21,15 @@ export type Website = {
 
 export type WebsiteWithTicks = Website & { ticks: Tick[] };
 
+export type Incident = {
+  id: string;
+  website_id: string;
+  region_id: string;
+  started_at: string;
+  ended_at: string | null;
+  website: { url: string };
+};
+
 const TOKEN_KEY = "uptime_token";
 
 export function getToken(): string | null {
@@ -81,11 +90,14 @@ export const api = {
   getWebsiteStatus: (id: string) =>
     request<{ website: WebsiteWithTicks }>(`/status/${id}`),
   getPublicStatus: (userId: string) =>
-    request<{ websites: WebsiteWithTicks[] }>(`/public/status/${userId}`),
+    request<{ websites: WebsiteWithTicks[]; incidents: Incident[] }>(
+      `/public/status/${userId}`,
+    ),
   getWebhook: () => request<{ url: string | null }>("/user/webhook"),
   setWebhook: (url: string) =>
     request<{ ok: true }>("/user/webhook", {
       method: "PATCH",
       body: JSON.stringify({ url }),
     }),
+  getIncidents: () => request<{ incidents: Incident[] }>("/incidents"),
 };
