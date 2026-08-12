@@ -102,18 +102,18 @@ export default function WebsiteDetail() {
           {ticks.map((t) => (
             <div key={t.id} className="group relative flex flex-1 flex-col items-center gap-1">
               <div className="flex h-24 w-full items-end">
-                <div
-                  title={`${t.status} · ${t.response_time_ms}ms`}
-                  style={{ height: `${Math.max(12, Math.min(100, 1000 / t.response_time_ms * 100))}%` }}
-                  className={`w-full rounded-sm ${STATUS_STYLES[t.status]} opacity-80 group-hover:opacity-100`}
-                />
+              <div
+                title={`${t.status}${t.http_status ? ` · HTTP ${t.http_status}` : ""} · ${t.response_time_ms}ms`}
+                style={{ height: `${Math.max(12, Math.min(100, 1000 / t.response_time_ms * 100))}%` }}
+                className={`w-full rounded-sm ${STATUS_STYLES[t.status]} opacity-80 group-hover:opacity-100`}
+              />
               </div>
               <span className="text-[10px] text-zinc-600">
                 {t.response_time_ms}ms
               </span>
-              <span className="absolute -top-7 z-10 hidden whitespace-nowrap rounded bg-zinc-800 px-2 py-1 text-[10px] text-zinc-200 group-hover:block">
-                {t.status} · {t.response_time_ms}ms · {new Date(t.created_at).toLocaleString()} · {t.region_id}
-              </span>
+                <span className="absolute -top-7 z-10 hidden whitespace-nowrap rounded bg-zinc-800 px-2 py-1 text-[10px] text-zinc-200 group-hover:block">
+                  {t.status}{t.http_status ? ` · HTTP ${t.http_status}` : ""} · {t.response_time_ms}ms · {new Date(t.created_at).toLocaleString()} · {t.region_id}
+                </span>
             </div>
           ))}
         </div>

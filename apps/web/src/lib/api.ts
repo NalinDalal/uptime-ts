@@ -6,6 +6,7 @@ export type Tick = {
   id: string;
   response_time_ms: number;
   status: TickStatus;
+  http_status: number | null;
   created_at: string;
   region_id: string;
   website_id: string;
@@ -28,6 +29,27 @@ export type Incident = {
   started_at: string;
   ended_at: string | null;
   website: { url: string };
+};
+
+export type Periods = { d1: number | null; d7: number | null; d30: number | null };
+
+export type WebsiteStat = {
+  website_id: string;
+  periods: Periods;
+};
+
+export type ComponentStatus = {
+  name: string;
+  websites: WebsiteWithTicks[];
+  stats: Periods;
+  status: "Up" | "Down" | "Unknown";
+};
+
+export type PublicStatusResponse = {
+  components: ComponentStatus[];
+  incidents: Incident[];
+  websites: WebsiteWithTicks[];
+  stats: WebsiteStat[];
 };
 
 const TOKEN_KEY = "uptime_token";
@@ -90,9 +112,7 @@ export const api = {
   getWebsiteStatus: (id: string) =>
     request<{ website: WebsiteWithTicks }>(`/status/${id}`),
   getPublicStatus: (userId: string) =>
-    request<{ websites: WebsiteWithTicks[]; incidents: Incident[] }>(
-      `/public/status/${userId}`,
-    ),
+    request<PublicStatusResponse>(`/public/status/${userId}`),
   getWebhook: () => request<{ url: string | null }>("/user/webhook"),
   setWebhook: (url: string) =>
     request<{ ok: true }>("/user/webhook", {
