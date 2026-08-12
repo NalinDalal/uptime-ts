@@ -49,11 +49,26 @@ then it gets ack on the servers which are region wise located
 
 push the weebsite into queue, every 3 minutes
 
-start redis on docker
+start postgres and redis on docker
 
 ```sh
-docker run -p -d 6379:6379 redis
+docker compose up -d
 ```
+
+apply the prisma migrations
+
+```sh
+cd packages/store
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/uptime" bunx prisma migrate deploy
+```
+
+seed the region workers
+
+```sh
+docker exec uptime-postgres psql -U postgres -d uptime -c "INSERT INTO region (id, name) VALUES ('india', 'India'), ('usa', 'USA'), ('nigeria', 'Nigeria');"
+```
+
+env vars needed: `DATABASE_URL` and `JWT_SECRET` (bun auto-loads `.env`)
 
 run redis on docker, now how to test it
 
