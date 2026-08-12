@@ -22,7 +22,7 @@ export default function AuthPage() {
       }
       const res = await api.signin(username, password);
       setToken(res.jwt);
-      router.push("/");
+      router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

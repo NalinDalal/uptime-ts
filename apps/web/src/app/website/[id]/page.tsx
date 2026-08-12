@@ -145,7 +145,7 @@ export default function WebsiteDetail() {
 
     return (
         <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-            <Link href="/" className="text-sm text-muted hover:text-text">
+            <Link href="/dashboard" className="text-sm text-muted hover:text-text">
                 ← Back
             </Link>
 
