@@ -2,6 +2,9 @@
   "name": "pusher",
   "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "dev": "bun --env-file=../../.env --watch index.ts"
+  },
   "dependencies": {
     "store": "*",
     "redisstream": "*"

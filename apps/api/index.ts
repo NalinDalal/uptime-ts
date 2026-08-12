@@ -3,6 +3,7 @@ import express from "express";
 const app = express();
 import { prismaClient } from "../../packages/store/index";
 import { authMiddleware } from "./middleware";
+import { AuthInput } from "./types";
 app.use(express.json());
 
 app.post("/website", authMiddleware, async (req, res) => {
@@ -14,7 +15,7 @@ app.post("/website", authMiddleware, async (req, res) => {
     data: {
       url: req.body.url,
       time_added: new Date(),
-      user_id: "ads",
+      user_id: req.userId!,
     },
   });
 
@@ -27,13 +28,13 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
   const website = await prismaClient.website.findFirst({
     where: {
       user_id: req.userId!,
-      id: req.params.websiteId,
+      id: String(req.params.websiteId),
     },
     include: {
       ticks: {
         orderBy: [
           {
-            createdAt: "desc",
+            created_at: "desc",
           },
         ],
         take: 10,
@@ -48,38 +49,35 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
     return;
   }
 
-  res.json({ url: website.url, id: website.id, user_id: website.user_id });
+  res.json({ website: { url: website.url, id: website.id, user_id: website.user_id } });
 });
 
-app.get("/user/signup", async (req, res) => {
+app.post("/user/signup", async (req, res) => {
   const data = AuthInput.safeParse(req.body);
   if (!data.success) {
-    console.log(data);
     res.status(403).send("");
     return;
   }
   try {
-    await prismaClient.user.create({
+    const user = await prismaClient.user.create({
       data: {
         username: data.data.username,
-        password: date.data.password,
+        password: data.data.password,
       },
     });
     res.json({ id: user.id });
   } catch (e) {
     console.log(e);
-
-    res.send(403).send("");
+    res.status(403).send("");
   }
 });
-app.get("/user/signin", async (req, res) => {
+app.post("/user/signin", async (req, res) => {
   const data = AuthInput.safeParse(req.body);
   if (!data.success) {
-    console.log(data);
     res.status(403).send("");
     return;
   }
-  let user = await prismaClient.user.findFirst({
+  const user = await prismaClient.user.findFirst({
     where: {
       username: data.data.username,
     },
@@ -88,11 +86,11 @@ app.get("/user/signin", async (req, res) => {
     res.status(403).send("");
     return;
   }
-  let token = jwt.sign(
+  const token = jwt.sign(
     {
       sub: user.id,
     },
-    !process.env.JWT_SECRET!,
+    process.env.JWT_SECRET!,
   );
   res.json({ jwt: token });
 });
