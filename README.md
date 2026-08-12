@@ -22,7 +22,7 @@ flowchart TB
     class PG,StatusDB storage
     class Scheduler,Queue,Workers pipeline
     class Alerting alert
-``
+```
 
 so basically started wrting backend in `apps/api/`
 init with a express backend, stores website for now
