@@ -63,7 +63,7 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
 app.post("/user/signup", async (req, res) => {
   const data = AuthInput.safeParse(req.body);
   if (!data.success) {
-    res.status(403).send("");
+    res.status(403).json({ message: "Invalid input" });
     return;
   }
   try {
@@ -75,15 +75,19 @@ app.post("/user/signup", async (req, res) => {
       },
     });
     res.json({ id: user.id });
-  } catch (e) {
-    console.log(e);
-    res.status(403).send("");
+  } catch (e: any) {
+    console.error("Signup error:", e);
+    if (e.code === "P2002") {
+      res.status(409).json({ message: "Username already taken" });
+    } else {
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
 });
 app.post("/user/signin", async (req, res) => {
   const data = AuthInput.safeParse(req.body);
   if (!data.success) {
-    res.status(403).send("");
+    res.status(403).json({ message: "Invalid input" });
     return;
   }
   const user = await prismaClient.user.findFirst({
@@ -92,7 +96,7 @@ app.post("/user/signin", async (req, res) => {
     },
   });
   if (!user || !(await bcrypt.compare(data.data.password, user.password))) {
-    res.status(403).send("");
+    res.status(401).json({ message: "Invalid username or password" });
     return;
   }
   const token = jwt.sign(
@@ -294,6 +298,7 @@ app.get("/public/status/:userId", async (req, res) => {
     };
   });
 
+  res.set("Cache-Control", "public, max-age=15, s-maxage=15");
   res.json({
     components,
     incidents,
