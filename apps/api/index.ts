@@ -139,6 +139,27 @@ app.get("/public/status/:userId", async (req, res) => {
   });
 });
 
+app.get("/user/webhook", authMiddleware, async (req, res) => {
+  const user = await prismaClient.user.findUnique({
+    where: { id: req.userId },
+    select: { webhook_url: true },
+  });
+  res.json({ url: user?.webhook_url ?? null });
+});
+
+app.patch("/user/webhook", authMiddleware, async (req, res) => {
+  const { url } = req.body;
+  if (typeof url !== "string") {
+    res.status(411).json({});
+    return;
+  }
+  await prismaClient.user.update({
+    where: { id: req.userId },
+    data: { webhook_url: url },
+  });
+  res.json({ ok: true });
+});
+
 console.log("Listening on port 3001");
 console.log(
   "Send post request on `localhost:3001/user/signup` with username and password as input",

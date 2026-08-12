@@ -82,4 +82,10 @@ export const api = {
     request<{ website: WebsiteWithTicks }>(`/status/${id}`),
   getPublicStatus: (userId: string) =>
     request<{ websites: WebsiteWithTicks[] }>(`/public/status/${userId}`),
+  getWebhook: () => request<{ url: string | null }>("/user/webhook"),
+  setWebhook: (url: string) =>
+    request<{ ok: true }>("/user/webhook", {
+      method: "PATCH",
+      body: JSON.stringify({ url }),
+    }),
 };

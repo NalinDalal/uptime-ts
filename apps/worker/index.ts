@@ -34,38 +34,83 @@ async function main() {
   }
 }
 
-async function fetchWebsite(url: string, websiteId: string) {
-  return new Promise<void>((resolve, reject) => {
-    const startTime = Date.now();
-
-    axios
-      .get(url)
-      .then(async () => {
-        const endTime = Date.now();
-        await prismaClient.website_tick.create({
-          data: {
-            response_time_ms: endTime - startTime,
-            status: "Up",
-            region_id: REGION_ID,
-            website_id: websiteId,
-          },
-        });
-        resolve();
-      })
-      .catch(async () => {
-        const endTime = Date.now();
-        await prismaClient.website_tick.create({
-          data: {
-            response_time_ms: endTime - startTime,
-            status: "Down",
-            region_id: REGION_ID,
-            website_id: websiteId,
-          },
-        });
-        resolve();
-      });
+async function getWebhookUrl(websiteId: string): Promise<string | null> {
+  const website = await prismaClient.website.findUnique({
+    where: { id: websiteId },
+    include: {
+      user: { select: { webhook_url: true } },
+    },
   });
+  return website?.user.webhook_url ?? null;
+}
+
+async function sendAlert(
+  webhookUrl: string,
+  event: "incident_started" | "recovered",
+  payload: {
+    website_url: string;
+    website_id: string;
+    status: "Up" | "Down";
+    response_time_ms: number;
+  },
+) {
+  try {
+    await axios.post(webhookUrl, {
+      event,
+      region: REGION_ID,
+      time: new Date().toISOString(),
+      ...payload,
+    });
+  } catch (err) {
+    console.log("Webhook delivery failed", err);
+  }
+}
+
+async function fetchWebsite(url: string, websiteId: string) {
+  const startTime = Date.now();
+
+  const prev = await prismaClient.website_tick.findFirst({
+    where: {
+      website_id: websiteId,
+      region_id: REGION_ID,
+    },
+    orderBy: { created_at: "desc" },
+    take: 1,
+  });
+
+  let status: "Up" | "Down";
+  try {
+    const res = await axios.get(url, { validateStatus: () => true });
+    status = res.status < 500 ? "Up" : "Down";
+  } catch {
+    status = "Down";
+  }
+  const endTime = Date.now();
+
+  await prismaClient.website_tick.create({
+    data: {
+      response_time_ms: endTime - startTime,
+      status,
+      region_id: REGION_ID,
+      website_id: websiteId,
+    },
+  });
+
+  if (prev && prev.status !== status) {
+    const webhookUrl = await getWebhookUrl(websiteId);
+    if (webhookUrl) {
+      await sendAlert(
+        webhookUrl,
+        status === "Down" ? "incident_started" : "recovered",
+        {
+          website_url: url,
+          website_id: websiteId,
+          status,
+          response_time_ms: endTime - startTime,
+        },
+      );
+    }
+  }
 }
 
 main();
-

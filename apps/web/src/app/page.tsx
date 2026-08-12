@@ -20,6 +20,8 @@ export default function Dashboard() {
   const [websites, setWebsites] = useState<Website[]>([]);
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookError, setWebhookError] = useState("");
 
   const refresh = useCallback(async () => {
     try {
@@ -31,15 +33,35 @@ export default function Dashboard() {
     }
   }, []);
 
+    const loadWebhook = useCallback(async () => {
+    try {
+      const res = await api.getWebhook();
+      setWebhookUrl(res.url ?? "");
+    } catch {
+      setWebhookError("Could not load webhook settings");
+    }
+  }, []);
+
   useEffect(() => {
     if (!getToken()) {
       router.replace("/auth");
       return;
     }
     refresh(); // eslint-disable-line react-hooks/set-state-in-effect
+    loadWebhook();
     const id = setInterval(refresh, 10000);
     return () => clearInterval(id);
-  }, [refresh, router]);
+  }, [refresh, loadWebhook, router]);
+
+  async function saveWebhook(e: React.FormEvent) {
+    e.preventDefault();
+    setWebhookError("");
+    try {
+      await api.setWebhook(webhookUrl);
+    } catch {
+      setWebhookError("Could not save webhook URL");
+    }
+  }
 
   async function addWebsite(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +124,27 @@ export default function Dashboard() {
             </button>
           </form>
           {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+        </section>
+
+        <section>
+          <h2 className="text-sm font-medium text-zinc-400">
+            Alerts <span className="text-zinc-600">— webhook on status change</span>
+          </h2>
+          <form onSubmit={saveWebhook} className="mt-3 flex gap-2">
+            <input
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://hooks.slack.com/services/..."
+              className="flex-1 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-300"
+            >
+              Save
+            </button>
+          </form>
+          {webhookError && <p className="mt-2 text-sm text-red-400">{webhookError}</p>}
         </section>
 
         <section>

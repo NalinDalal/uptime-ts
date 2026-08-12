@@ -15,10 +15,11 @@ datasource db {
 }
 
 model user {
-    id       String    @id @default(uuid())
-    username String    @unique
-    password String
-    websites website[]
+    id          String    @id @default(uuid())
+    username    String    @unique
+    password    String
+    webhook_url String?
+    websites    website[]
 }
 
 model website {
