@@ -1,10 +1,12 @@
 import jwt from "jsonwebtoken";
 import express from "express";
+import cors from "cors";
 const app = express();
 import { prismaClient } from "../../packages/store/index";
 import { authMiddleware } from "./middleware";
 import { AuthInput } from "./types";
 app.use(express.json());
+app.use(cors());
 
 app.post("/website", authMiddleware, async (req, res) => {
   if (!req.body.url) {
@@ -49,7 +51,7 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
     return;
   }
 
-  res.json({ website: { url: website.url, id: website.id, user_id: website.user_id } });
+  res.json({ website: { url: website.url, id: website.id, user_id: website.user_id, ticks: website.ticks } });
 });
 
 app.post("/user/signup", async (req, res) => {
@@ -99,6 +101,16 @@ app.get("/websites", authMiddleware, async (req, res) => {
   const websites = await prismaClient.website.findMany({
     where: {
       user_id: req.userId,
+    },
+    include: {
+      ticks: {
+        orderBy: [
+          {
+            created_at: "desc",
+          },
+        ],
+        take: 1,
+      },
     },
   });
   res.json({
