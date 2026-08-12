@@ -1,12 +1,28 @@
 # Better Stack UpTime
 
-# System Design
+```mermaid
+flowchart TB
+    Browser["Browser<br/>Add & view sites"] --> API["API server<br/>Node.js REST API"]
+    API --> PG[("Websites DB<br/>Postgres config store")]
 
-![des1](./Sys-des-1.png)
-![des2](./sys-des-2.png)
-![des3](./sys-des-3.jpg)
+    PG --> Scheduler["Scheduler<br/>Publishes check jobs"]
+    Scheduler --> Queue["Message queue<br/>Kafka / Redis Streams"]
+    Queue --> Workers["Region workers<br/>India, USA, Nigeria"]
+    Workers --> StatusDB[("Status DB<br/>Time-series results")]
 
-start writing the code
+    StatusDB --> API
+    StatusDB --> Alerting["Alerting service<br/>Notifies on downtime"]
+
+    classDef client fill:#E6F1FB,stroke:#185FA5,color:#042C53
+    classDef storage fill:#E1F5EE,stroke:#0F6E56,color:#04342C
+    classDef pipeline fill:#FAECE7,stroke:#993C1D,color:#4A1B0C
+    classDef alert fill:#FAEEDA,stroke:#854F0B,color:#412402
+
+    class Browser,API client
+    class PG,StatusDB storage
+    class Scheduler,Queue,Workers pipeline
+    class Alerting alert
+``
 
 so basically started wrting backend in `apps/api/`
 init with a express backend, stores website for now
