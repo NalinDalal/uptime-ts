@@ -207,6 +207,88 @@ export default function WebsiteDetail() {
                     ))}
                 </div>
             </section>
+
+            <section className="mt-12">
+                <h2 className="text-sm font-medium text-muted">
+                    Response time trend
+                </h2>
+                <div className="mt-3 h-64 w-full rounded-lg border border-border bg-surface p-4">
+                    {ticks.length === 0 ? (
+                        <p className="text-sm text-muted">No data yet.</p>
+                    ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                                <XAxis
+                                    dataKey="time"
+                                    stroke="var(--color-muted)"
+                                    tick={{ fill: "var(--color-muted)", fontSize: 11 }}
+                                    tickLine={{ stroke: "var(--color-border)" }}
+                                />
+                                <YAxis
+                                    stroke="var(--color-muted)"
+                                    tick={{ fill: "var(--color-muted)", fontSize: 11 }}
+                                    tickLine={{ stroke: "var(--color-border)" }}
+                                    label={{
+                                        value: "ms",
+                                        angle: -90,
+                                        position: "insideLeft",
+                                        fill: "var(--color-muted)",
+                                        fontSize: 11,
+                                    }}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: "var(--color-surface-elevated)",
+                                        border: "1px solid var(--color-border)",
+                                        borderRadius: "0.5rem",
+                                        color: "var(--color-text)",
+                                    }}
+                                    labelStyle={{ color: "var(--color-muted)" }}
+                                />
+                                <Legend
+                                    wrapperStyle={{ color: "var(--color-muted)", fontSize: 12 }}
+                                />
+                                {regions.map((region) => (
+                                    <Line
+                                        key={region}
+                                        type="monotone"
+                                        dataKey={region}
+                                        stroke={getRegionChartColor(region)}
+                                        strokeWidth={2}
+                                        dot={(props) => {
+                                            const status = props.payload[`${region}_status`];
+                                            if (status === "Down" || status === "Unknown") {
+                                                return (
+                                                    <circle
+                                                        cx={props.cx}
+                                                        cy={props.cy}
+                                                        r={4}
+                                                        fill="var(--color-danger)"
+                                                        stroke="var(--color-surface)"
+                                                        strokeWidth={2}
+                                                    />
+                                                );
+                                            }
+                                            return (
+                                                <circle
+                                                    cx={props.cx}
+                                                    cy={props.cy}
+                                                    r={3}
+                                                    fill={getRegionChartColor(region)}
+                                                    stroke="var(--color-surface)"
+                                                    strokeWidth={1}
+                                                />
+                                            );
+                                        }}
+                                        activeDot={{ r: 5 }}
+                                    />
+                                ))}
+                            </LineChart>
+                        </ResponsiveContainer>
+                    )}
+                </div>
+            </section>
         </main>
     );
 }
