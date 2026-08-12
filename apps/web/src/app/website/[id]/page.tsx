@@ -117,16 +117,13 @@ export default function WebsiteDetail() {
     const maxMs = Math.max(...ticks.map((t) => t.response_time_ms), 1);
 
     const regions = Array.from(new Set(ticks.map((t) => t.region_id)));
-    const chartData = ticks
-        .slice()
-        .reverse()
-        .map((t) => ({
-            time: new Date(t.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            fullTime: new Date(t.created_at).toLocaleString(),
-            [t.region_id]: t.response_time_ms,
-            [`${t.region_id}_status`]: t.status,
-            [`${t.region_id}_http`]: t.http_status,
-        }));
+    const chartData = ticks.map((t) => ({
+        time: new Date(t.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        fullTime: new Date(t.created_at).toLocaleString(),
+        [t.region_id]: t.response_time_ms,
+        [`${t.region_id}_status`]: t.status,
+        [`${t.region_id}_http`]: t.http_status,
+    }));
 
     return (
         <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
