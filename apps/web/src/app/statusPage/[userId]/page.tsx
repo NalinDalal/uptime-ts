@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { api, type WebsiteWithTicks, type TickStatus, type Incident, type ComponentStatus, type Maintenance } from "@/lib/api";
 
 const TICK_COLORS: Record<TickStatus, string> = {
@@ -31,7 +32,12 @@ function MonitorCard({ website }: { website: WebsiteWithTicks }) {
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-5">
       <div className="flex items-center justify-between gap-4">
-        <span className="truncate font-mono text-sm">{website.url}</span>
+        <Link
+          href={`/website/${website.id}`}
+          className="truncate font-mono text-sm text-emerald-400 hover:text-emerald-300"
+        >
+          {website.url}
+        </Link>
         <span
           className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
             latest?.status === "Up"
