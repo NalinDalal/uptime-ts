@@ -80,4 +80,6 @@ export const api = {
   getWebsites: () => request<{ websites: Website[] }>("/websites"),
   getWebsiteStatus: (id: string) =>
     request<{ website: WebsiteWithTicks }>(`/status/${id}`),
+  getPublicStatus: (userId: string) =>
+    request<{ websites: WebsiteWithTicks[] }>(`/public/status/${userId}`),
 };

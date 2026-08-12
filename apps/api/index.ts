@@ -118,6 +118,27 @@ app.get("/websites", authMiddleware, async (req, res) => {
   });
 });
 
+app.get("/public/status/:userId", async (req, res) => {
+  const websites = await prismaClient.website.findMany({
+    where: {
+      user_id: String(req.params.userId),
+    },
+    include: {
+      ticks: {
+        orderBy: [
+          {
+            created_at: "desc",
+          },
+        ],
+        take: 24,
+      },
+    },
+  });
+  res.json({
+    websites,
+  });
+});
+
 console.log("Listening on port 3001");
 console.log(
   "Send post request on `localhost:3001/user/signup` with username and password as input",

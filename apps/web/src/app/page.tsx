@@ -54,6 +54,8 @@ export default function Dashboard() {
     }
   }
 
+  const latestUserId = websites[websites.length - 1]?.user_id;
+
   function logout() {
     clearToken();
     router.push("/auth");
@@ -66,9 +68,19 @@ export default function Dashboard() {
           <h1 className="text-lg font-semibold tracking-tight">
             Uptime <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 align-middle" />
           </h1>
-          <button onClick={logout} className="text-sm text-zinc-400 hover:text-zinc-200">
-            Sign out
-          </button>
+          <div className="flex items-center gap-4">
+            {latestUserId && (
+              <Link
+                href={`/status-page/${latestUserId}`}
+                className="text-sm text-zinc-400 hover:text-zinc-200"
+              >
+                Public status page
+              </Link>
+            )}
+            <button onClick={logout} className="text-sm text-zinc-400 hover:text-zinc-200">
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
