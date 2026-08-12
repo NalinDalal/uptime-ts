@@ -50,19 +50,6 @@ function getRegionChartColor(regionId: string): string {
     }
     return REGION_CHART_COLORS[regionId];
 }
-    return REGION_COLORS[REGION_COLORS_INDEX[regionId] % REGION_COLORS.length];
-}
-
-const REGION_CHART_COLORS: Record<string, string> = {};
-
-function getRegionChartColor(regionId: string): string {
-    if (!(regionId in REGION_CHART_COLORS)) {
-        const idx = Object.keys(REGION_CHART_COLORS).length;
-        const palette = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444", "#06b6d4", "#f97316"];
-        REGION_CHART_COLORS[regionId] = palette[idx % palette.length];
-    }
-    return REGION_CHART_COLORS[regionId];
-}
 
 export default function WebsiteDetail() {
     const params = useParams<{ id: string }>();
