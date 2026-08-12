@@ -27,6 +27,7 @@ model website {
     url        String
     user_id    String
     time_added DateTime
+    component String?
     ticks      website_tick[]
     incidents  incident[]
     user       user           @relation(fields: [user_id], references: [id])
@@ -51,11 +52,15 @@ model website_tick {
     id               String         @id @default(uuid())
     response_time_ms Int
     status           website_status
+    http_status      Int?
     created_at       DateTime       @default(now())
     region           region         @relation(fields: [region_id], references: [id])
     website          website        @relation(fields: [website_id], references: [id])
     region_id        String
     website_id       String
+
+    @@index([website_id, created_at])
+    @@index([website_id, region_id, created_at])
 }
 
 enum website_status {
