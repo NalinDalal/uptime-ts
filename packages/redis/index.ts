@@ -16,6 +16,24 @@ type MessageType = {
 
 const STREAM_NAME = "betteruptime:website";
 
+const createdGroups = new Set<string>();
+
+async function ensureGroup(consumerGroup: string) {
+  if (createdGroups.has(consumerGroup)) {
+    return;
+  }
+  try {
+    await client.xGroupCreate(STREAM_NAME, consumerGroup, "0", {
+      MKSTREAM: true,
+    });
+  } catch (err: any) {
+    if (err?.message !== "BUSYGROUP Consumer Group name already exists") {
+      throw err;
+    }
+  }
+  createdGroups.add(consumerGroup);
+}
+
 async function xAdd({ url, id }: WebsiteEvent) {
   await client.xAdd(STREAM_NAME, "*", {
     url,
@@ -36,6 +54,7 @@ export async function xReadGroup(
   consumerGroup: string,
   workerId: string,
 ): Promise<MessageType[] | undefined> {
+  await ensureGroup(consumerGroup);
   const res = await client.xReadGroup(
     consumerGroup,
     workerId,
@@ -45,6 +64,7 @@ export async function xReadGroup(
     },
     {
       COUNT: 5,
+      BLOCK: 5000,
     },
   );
 
