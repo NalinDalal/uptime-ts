@@ -2,12 +2,18 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { api, type WebsiteWithTicks, type TickStatus, type Incident } from "@/lib/api";
+import { api, type WebsiteWithTicks, type TickStatus, type Incident, type ComponentStatus } from "@/lib/api";
 
 const TICK_COLORS: Record<TickStatus, string> = {
   Up: "bg-emerald-500",
   Down: "bg-red-500",
   Unknown: "bg-zinc-700",
+};
+
+const STATUS_STYLES: Record<string, string> = {
+  Up: "bg-emerald-500/15 text-emerald-400",
+  Down: "bg-red-500/15 text-red-400",
+  Unknown: "bg-zinc-500/15 text-zinc-400",
 };
 
 function MonitorCard({ website }: { website: WebsiteWithTicks }) {
@@ -54,16 +60,27 @@ function MonitorCard({ website }: { website: WebsiteWithTicks }) {
   );
 }
 
+function UptimeBadge({ value }: { value: number | null }) {
+  if (value === null) {
+    return <span className="text-xs text-zinc-500">No data</span>;
+  }
+  const color =
+    value >= 99 ? "text-emerald-400"
+    : value >= 95 ? "text-yellow-400"
+    : "text-red-400";
+  return <span className={`text-xs font-medium ${color}`}>{value.toFixed(2)}%</span>;
+}
+
 export default function StatusPageView() {
   const params = useParams<{ userId: string }>();
-  const [websites, setWebsites] = useState<WebsiteWithTicks[]>([]);
+  const [components, setComponents] = useState<ComponentStatus[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
     try {
       const res = await api.getPublicStatus(params.userId);
-      setWebsites(res.websites);
+      setComponents(res.components);
       setIncidents(res.incidents);
       setError("");
     } catch {
@@ -77,9 +94,7 @@ export default function StatusPageView() {
     return () => clearInterval(id);
   }, [refresh]);
 
-  const allUp = websites.length > 0 && websites.every(
-    (w) => w.ticks[0]?.status === "Up",
-  );
+  const allUp = components.length > 0 && components.every((c) => c.status === "Up");
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
@@ -92,7 +107,7 @@ export default function StatusPageView() {
               : "bg-red-500/15 text-red-400"
           }`}
         >
-          {websites.length === 0
+          {components.length === 0
             ? "No monitors"
             : allUp
               ? "All systems operational"
@@ -102,12 +117,33 @@ export default function StatusPageView() {
 
       {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 
-      <div className="mt-8 space-y-4">
-        {websites.length === 0 && !error && (
+      <div className="mt-8 space-y-8">
+        {components.length === 0 && !error && (
           <p className="text-sm text-zinc-500">No monitors on this status page.</p>
         )}
-        {websites.map((w) => (
-          <MonitorCard key={w.id} website={w} />
+        {components.map((component) => (
+          <section key={component.name}>
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-sm font-medium text-zinc-300">{component.name}</h2>
+              <div className="flex items-center gap-3">
+                <div className="flex gap-3 text-xs">
+                  <span>24h <UptimeBadge value={component.stats.d1} /></span>
+                  <span>7d <UptimeBadge value={component.stats.d7} /></span>
+                  <span>30d <UptimeBadge value={component.stats.d30} /></span>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[component.status]}`}
+                >
+                  {component.status}
+                </span>
+              </div>
+            </div>
+            <div className="mt-3 space-y-3">
+              {component.websites.map((w) => (
+                <MonitorCard key={w.id} website={w} />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
 
