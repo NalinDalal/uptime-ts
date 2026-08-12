@@ -15,6 +15,17 @@ function StatusPill({ status }: { status: TickStatus | undefined }) {
     return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${styles}`}>{status}</span>;
 }
 
+function SkeletonRow() {
+    return (
+        <li className="px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+                <div className="h-4 w-48 animate-pulse rounded bg-surface-elevated" />
+                <div className="h-5 w-16 animate-pulse rounded-full bg-surface-elevated" />
+            </div>
+        </li>
+    );
+}
+
 export default function Dashboard() {
     const router = useRouter();
     const [websites, setWebsites] = useState<Website[]>([]);
@@ -23,6 +34,7 @@ export default function Dashboard() {
     const [webhookUrl, setWebhookUrl] = useState("");
     const [webhookError, setWebhookError] = useState("");
     const [incidents, setIncidents] = useState<Incident[]>([]);
+    const [loading, setLoading] = useState(true);
 
     function formatTime(iso: string) {
         return new Date(iso).toLocaleString();
@@ -41,6 +53,8 @@ export default function Dashboard() {
             setError("");
         } catch {
             setError("Could not reach the API server");
+        } finally {
+            setLoading(false);
         }
     }, []);
 
@@ -109,7 +123,8 @@ export default function Dashboard() {
             <header className="border-b border-border">
                 <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
                     <h1 className="text-lg font-semibold tracking-tight">
-                        Uptime <span className="inline-block h-2 w-2 rounded-full bg-success align-middle" />
+                        Uptime{" "}
+                        <span className="inline-block h-2 w-2 rounded-full bg-success align-middle animate-pulse-slow" />
                     </h1>
                     <div className="flex items-center gap-4">
                         {latestUserId && (
@@ -200,24 +215,29 @@ export default function Dashboard() {
                 </section>
 
                 <section>
-                    <h2 className="text-sm font-medium text-muted">Monitors</h2>
-                    {websites.length === 0 ? (
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-medium text-muted">Monitors</h2>
+                        {loading && <span className="text-xs text-muted">Refreshing...</span>}
+                    </div>
+                    {websites.length === 0 && !loading ? (
                         <p className="mt-4 text-sm text-muted">
                             No monitors yet. Add one above to start checking uptime.
                         </p>
                     ) : (
                         <ul className="mt-3 divide-y divide-border rounded-lg border border-border">
-                            {websites.map((w) => (
-                                <li key={w.id}>
-                                    <Link
-                                        href={`/website/${w.id}`}
-                                        className="flex items-center justify-between px-4 py-3 hover:bg-surface-elevated"
-                                    >
-                                        <span className="font-mono text-sm">{w.url}</span>
-                                        <StatusPill status={w.ticks?.[0]?.status} />
-                                    </Link>
-                                </li>
-                            ))}
+                            {loading
+                                ? Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
+                                : websites.map((w) => (
+                                    <li key={w.id}>
+                                        <Link
+                                            href={`/website/${w.id}`}
+                                            className="flex items-center justify-between px-4 py-3 hover:bg-surface-elevated transition-colors"
+                                        >
+                                            <span className="font-mono text-sm">{w.url}</span>
+                                            <StatusPill status={w.ticks?.[0]?.status} />
+                                        </Link>
+                                    </li>
+                                ))}
                         </ul>
                     )}
                 </section>

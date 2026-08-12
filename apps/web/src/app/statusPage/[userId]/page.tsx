@@ -23,6 +23,22 @@ const MAINTENANCE_STATUS_STYLES: Record<string, string> = {
   completed: "bg-muted/15 text-muted",
 };
 
+function SkeletonCard() {
+  return (
+    <div className="rounded-lg border border-border bg-surface p-5">
+      <div className="flex items-center justify-between gap-4">
+        <div className="h-4 w-48 animate-pulse rounded bg-surface-elevated" />
+        <div className="h-5 w-16 animate-pulse rounded-full bg-surface-elevated" />
+      </div>
+      <div className="mt-4 flex h-2.5 gap-0.5">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="h-full flex-1 animate-pulse rounded-sm bg-surface-elevated" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MonitorCard({ website }: { website: WebsiteWithTicks }) {
   const ticks = [...website.ticks].reverse();
   const latest = ticks[ticks.length - 1];
@@ -30,7 +46,7 @@ function MonitorCard({ website }: { website: WebsiteWithTicks }) {
   const uptime = ticks.length ? Math.round((upCount / ticks.length) * 100) : 0;
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-5">
+    <div className="rounded-lg border border-border bg-surface p-5 transition-colors hover:border-muted">
       <div className="flex items-center justify-between gap-4">
         <Link
           href={`/website/${website.id}`}
@@ -39,7 +55,7 @@ function MonitorCard({ website }: { website: WebsiteWithTicks }) {
           {website.url}
         </Link>
         <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium transition-all ${
             latest?.status === "Up"
               ? "bg-success/15 text-success"
               : latest?.status === "Down"
@@ -57,7 +73,7 @@ function MonitorCard({ website }: { website: WebsiteWithTicks }) {
           <div
             key={t.id}
             title={`${t.status} · ${t.response_time_ms}ms · ${new Date(t.created_at).toLocaleString()}`}
-            className={`h-full flex-1 rounded-sm first:rounded-l-sm last:rounded-r-sm ${TICK_COLORS[t.status]}`}
+            className={`h-full flex-1 rounded-sm first:rounded-l-sm last:rounded-r-sm transition-opacity hover:opacity-80 ${TICK_COLORS[t.status]}`}
           />
         ))}
       </div>
@@ -96,6 +112,8 @@ export default function StatusPageView() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [maintenances, setMaintenances] = useState<Maintenance[]>([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string>("");
 
   const refresh = useCallback(async () => {
     try {
@@ -103,9 +121,12 @@ export default function StatusPageView() {
       setComponents(res.components);
       setIncidents(res.incidents);
       setMaintenances(res.maintenances);
+      setLastUpdated(new Date().toLocaleTimeString());
       setError("");
     } catch {
       setError("Could not load status");
+    } finally {
+      setLoading(false);
     }
   }, [params.userId]);
 
@@ -119,20 +140,25 @@ export default function StatusPageView() {
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-      <div className="flex items-center gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">Uptime</h1>
-        <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-            allUp
-              ? "bg-success/15 text-success"
-              : "bg-danger/15 text-danger"
-          }`}
-        >
-          {components.length === 0
-            ? "No monitors"
-            : allUp
-              ? "All systems operational"
-              : "Systems degraded"}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold tracking-tight">Uptime</h1>
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+              allUp
+                ? "bg-success/15 text-success"
+                : "bg-danger/15 text-danger"
+            }`}
+          >
+            {components.length === 0 && !loading
+              ? "No monitors"
+              : allUp
+                ? "All systems operational"
+                : "Systems degraded"}
+          </span>
+        </div>
+        <span className="text-xs text-muted">
+          {loading ? "Updating..." : `Updated ${lastUpdated}`}
         </span>
       </div>
 
@@ -175,19 +201,36 @@ export default function StatusPageView() {
       )}
 
       <div className="mt-8 space-y-8">
-        {components.length === 0 && !error && (
+        {components.length === 0 && !loading && (
           <p className="text-sm text-muted">No monitors on this status page.</p>
         )}
-        {components.map((component) => (
-          <section key={component.name}>
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-sm font-medium text-text">{component.name}</h2>
-              <div className="flex items-center gap-3">
-                <div className="flex gap-3 text-xs">
-                  <span>24h <UptimeBadge value={component.stats.d1} /></span>
-                  <span>7d <UptimeBadge value={component.stats.d7} /></span>
-                  <span>30d <UptimeBadge value={component.stats.d30} /></span>
+        {loading
+          ? Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)
+          : components.map((component) => (
+              <section key={component.name}>
+                <div className="flex items-center justify-between gap-4">
+                  <h2 className="text-sm font-medium text-text">{component.name}</h2>
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-3 text-xs">
+                      <span>24h <UptimeBadge value={component.stats.d1} /></span>
+                      <span>7d <UptimeBadge value={component.stats.d7} /></span>
+                      <span>30d <UptimeBadge value={component.stats.d30} /></span>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[component.status]}`}
+                    >
+                      {component.status}
+                    </span>
+                  </div>
                 </div>
+                <div className="mt-3 space-y-3">
+                  {component.websites.map((w) => (
+                    <MonitorCard key={w.id} website={w} />
+                  ))}
+                </div>
+              </section>
+            ))}
+      </div>
                 <span
                   className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[component.status]}`}
                 >
