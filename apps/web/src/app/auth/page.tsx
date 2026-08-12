@@ -56,7 +56,7 @@ export default function AuthPage() {
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent transition-colors disabled:opacity-50"
+              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent transition-colors disabled:opacity-50"
               required
               disabled={loading}
             />
@@ -69,7 +69,7 @@ export default function AuthPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent transition-colors disabled:opacity-50"
+              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent transition-colors disabled:opacity-50"
               required
               disabled={loading}
             />
@@ -84,7 +84,7 @@ export default function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-success px-3 py-2 text-sm font-medium text-background hover:brightness-110 disabled:opacity-50 transition-all duration-200"
+            className="w-full rounded-md bg-accent px-3 py-2 text-sm font-medium text-background hover:brightness-110 disabled:opacity-50 transition-all duration-150"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">

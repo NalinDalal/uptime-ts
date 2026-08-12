@@ -25,7 +25,7 @@ const MAINTENANCE_STATUS_STYLES: Record<string, string> = {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-lg border border-border bg-surface p-5">
+    <div className="rounded-md border border-border bg-surface p-5">
       <div className="flex items-center justify-between gap-4">
         <div className="h-4 w-48 animate-pulse rounded bg-surface-elevated" />
         <div className="h-5 w-16 animate-pulse rounded-full bg-surface-elevated" />
@@ -46,7 +46,7 @@ function MonitorCard({ website }: { website: WebsiteWithTicks }) {
   const uptime = ticks.length ? Math.round((upCount / ticks.length) * 100) : 0;
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-5 transition-colors hover:border-muted">
+    <div className="rounded-md border border-border bg-surface p-5 transition-colors hover:border-muted">
       <div className="flex items-center justify-between gap-4">
         <Link
           href={`/website/${website.id}`}
@@ -177,7 +177,7 @@ export default function StatusPageView() {
             {maintenances.map((m) => (
               <li
                 key={m.id}
-                className="rounded-lg border border-border bg-surface px-4 py-3"
+                className="rounded-md border border-border bg-surface px-4 py-3"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="truncate font-mono text-sm">{m.title}</span>
@@ -249,7 +249,7 @@ export default function StatusPageView() {
           {incidents.length === 0 ? (
             <p className="mt-2 text-sm text-muted">No incidents recorded.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-border rounded-lg border border-border">
+            <ul className="mt-3 divide-y divide-border rounded-md border border-border">
               {incidents.map((inc) => (
                 <li key={inc.id} className="px-4 py-3">
                   <div className="flex items-center justify-between gap-3">

@@ -212,7 +212,7 @@ export default function WebsiteDetail() {
                 <h2 className="text-sm font-medium text-muted">
                     Response time trend
                 </h2>
-                <div className="mt-3 h-64 w-full rounded-lg border border-border bg-surface p-4">
+                <div className="mt-3 h-64 w-full rounded-md border border-border bg-surface p-4">
                     {ticks.length === 0 ? (
                         <p className="text-sm text-muted">No data yet.</p>
                     ) : (

@@ -36,7 +36,7 @@ function SummaryBadge({ label, value, tone }: { label: string; value: number; to
                     ? "border-muted/30 bg-muted/10 text-muted"
                     : "border-border bg-surface text-text";
     return (
-        <div className={`rounded-lg border px-3 py-1.5 text-xs ${color}`}>
+        <div className={`rounded-md border px-3 py-1.5 text-xs ${color}`}>
             <span className="text-[10px] uppercase tracking-wider opacity-70">{label}</span>
             <span className="ml-1.5 text-sm font-medium">{value}</span>
         </div>
@@ -167,11 +167,11 @@ export default function Dashboard() {
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
                             placeholder="https://example.com"
-                            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
+                            className="flex-1 rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
                         />
                         <button
                             type="submit"
-                            className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-background hover:brightness-110"
+                            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-background hover:brightness-110 transition-all duration-150"
                         >
                             Add
                         </button>
@@ -188,11 +188,11 @@ export default function Dashboard() {
                             value={webhookUrl}
                             onChange={(e) => setWebhookUrl(e.target.value)}
                             placeholder="https://hooks.slack.com/services/..."
-                            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
+                            className="flex-1 rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
                         />
                         <button
                             type="submit"
-                            className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-background hover:brightness-110"
+                            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-background hover:brightness-110 transition-all duration-150"
                         >
                             Save
                         </button>
@@ -207,7 +207,7 @@ export default function Dashboard() {
                             No incidents — every check has been passing.
                         </p>
                     ) : (
-                        <ul className="mt-3 divide-y divide-border rounded-lg border border-border">
+                        <ul className="mt-3 divide-y divide-border rounded-md border border-border">
                             {incidents.map((inc) => (
                                 <li key={inc.id} className="px-4 py-3">
                                     <div className="flex items-center justify-between gap-3">
@@ -261,7 +261,7 @@ export default function Dashboard() {
                             No monitors yet. Add one above to start checking uptime.
                         </p>
                     ) : (
-                        <ul className="mt-3 divide-y divide-border rounded-lg border border-border">
+                        <ul className="mt-3 divide-y divide-border rounded-md border border-border">
                             {loading
                                 ? Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
                                 : websites.map((w) => (
