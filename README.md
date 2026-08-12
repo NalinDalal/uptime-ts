@@ -1,109 +1,149 @@
-# Better Stack UpTime
+# Uptime
 
-```mermaid
-flowchart LR
-    Browser["Browser<br/>Add & view sites"] --> API["API server<br/>Node.js REST API"]
-    API --> PG[("Websites DB<br/>Postgres config store")]
+Multi-region website monitoring with incident tracking, alerting, and public status pages.
 
-    PG --> Scheduler["Scheduler<br/>Publishes check jobs"]
-    Scheduler --> Queue["Message queue<br/>Kafka / Redis Streams"]
-    Queue --> Workers["Region workers<br/>India, USA, Nigeria"]
-    Workers --> StatusDB[("Status DB<br/>Time-series results")]
+## Stack
 
-    StatusDB --> API
-    StatusDB --> Alerting["Alerting service<br/>Notifies on downtime"]
+- **Runtime**: Bun
+- **Frontend**: Next.js 16 + TypeScript + Tailwind v4
+- **API**: Express + Prisma
+- **Worker**: Bun + Redis Streams consumer groups
+- **Database**: PostgreSQL 16
+- **Queue**: Redis Streams
+- **Infra**: Docker Compose
 
-    classDef client fill:#E6F1FB,stroke:#185FA5,color:#042C53
-    classDef storage fill:#E1F5EE,stroke:#0F6E56,color:#04342C
-    classDef pipeline fill:#FAECE7,stroke:#993C1D,color:#4A1B0C
-    classDef alert fill:#FAEEDA,stroke:#854F0B,color:#412402
+## Architecture
 
-    class Browser,API client
-    class PG,StatusDB storage
-    class Scheduler,Queue,Workers pipeline
-    class Alerting alert
+```text
+Browser (Next.js)
+    │
+    ▼
+API Server (Express + Prisma)
+    │
+    ├──▶ PostgreSQL (websites, users, ticks, incidents, maintenance)
+    │
+    └──▶ Redis Streams (check queue)
+              │
+              ▼
+        Workers (per region)
+              │
+              └──▶ HTTP checks → tick writes → incident/webhook alerts
 ```
 
-so basically started wrting backend in `apps/api/`
-init with a express backend, stores website for now
+The API stores websites and serves the Next.js frontend. A Redis Streams queue distributes check jobs across regional workers. Each worker performs the HTTP check, writes a tick, and fires webhooks on status changes. The public status page reads from the same Postgres database.
 
-wrote the prisma client in packages so that the db can be shared
+## Project structure
 
-express backend is for user auth, website CRUD and get status
+```text
+apps/
+├── api/          # Express REST API + Prisma service
+├── web/          # Next.js frontend (landing, dashboard, status pages)
+└── worker/       # Regional Redis Streams consumer
 
-db stores website, then it gets pushed to a queue via a push process
-then it gets ack on the servers which are region wise located
-
-1. We have 2 different "consumer groups"
-2. Events should be distributed across all the workers of a single group
-3. Our workers can go down, so we need ack (acknowledgement) based queues
-
-push the weebsite into queue, every 3 minutes
-
-db stores website, then it gets pushed to a queue via a push process
-then it gets ack on the servers which are region wise located
-
-1. We have 2 different "consumer groups"
-2. Events should be distributed across all the workers of a single group
-3. Our workers can go down, so we need ack (acknowledgement) based queues
-
-push the weebsite into queue, every 3 minutes
-
-start postgres and redis on docker
-
-```sh
-docker compose up -d
+packages/
+├── store/        # Shared Prisma client + schema
+└── redis/        # Shared Redis client
 ```
 
-apply the prisma migrations
+## Prerequisites
 
-```sh
-cd packages/store
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/uptime" bunx prisma migrate deploy
+- [Bun](https://bun.sh) >= 1.2
+- Docker + Docker Compose
+- Node.js >= 18 (for tooling)
+
+## Setup
+
+1. Start Postgres and Redis:
+
+   ```bash
+   docker compose up -d
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   bun install
+   ```
+
+3. Apply Prisma migrations:
+
+   ```bash
+   cd packages/store
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/uptime" \
+     bunx prisma migrate deploy
+   cd ../..
+   ```
+
+4. Seed regions:
+
+   ```bash
+   docker exec -i uptime-postgres \
+     psql -U postgres -d uptime \
+     -c "INSERT INTO region (id, name) VALUES ('india', 'India'), ('usa', 'USA'), ('nigeria', 'Nigeria');"
+   ```
+
+## Environment
+
+Create a `.env` in the repo root:
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/uptime"
+JWT_SECRET="dev-secret"
 ```
 
-seed the region workers
+The API and worker both load `.env` automatically via Bun.
 
-```sh
-docker exec uptime-postgres psql -U postgres -d uptime -c "INSERT INTO region (id, name) VALUES ('india', 'India'), ('usa', 'USA'), ('nigeria', 'Nigeria');"
+## Running
+
+### API server
+
+```bash
+cd apps/api
+bun run index.ts
 ```
 
-env vars needed: `DATABASE_URL` and `JWT_SECRET` (bun auto-loads `.env`)
+Runs on `http://localhost:3001`.
 
-run redis on docker, now how to test it
+### Frontend
 
-we use redis streams to read those website in constant time
-to add on redis db:
-
-```redis
-XADD betteruptime:website * url google.com id 1
+```bash
+cd apps/web
+bun run dev
 ```
 
-to read:
+Runs on `http://localhost:3000`.
 
-```redis
-XREAD COUNT 10 STREAMS betteruptime:website [last_read_timestamp]
+### Worker
+
+```bash
+cd apps/worker
+REGION_ID=india WORKER_ID=india-1 bun run index.ts
 ```
 
-let's do this via node.js, first produce the stream{`producer`}, then consume it{`worker`}.
+Run one worker per region. Workers consume from the Redis Streams consumer group and perform the actual HTTP checks.
 
-to read say 2 from one of consumer
+## Scripts
 
-```sh
-XREADGROUP GROUP india india-1 COUNT 2 STREAMS betteruptime:website >
-#consumer grp 1
-
-XREADGROUP GROUP india india-2 COUNT 2 STREAMS betteruptime:website >
-#consumer grp 2
+```bash
+bun run dev        # Start all apps via turbo
+bun run build      # Build all apps
+bun run lint       # Lint all apps
+bun run check-types # TypeScript check across workspace
+bun run format     # Prettier write
 ```
 
-now our client can read
+## Key endpoints
 
-```sh
-cd worker
-bun index.ts
-```
+- `POST /user/signup` — create account
+- `POST /user/signin` — authenticate, returns JWT
+- `POST /website` — add monitor (auth required)
+- `GET /public/status/:userId` — public status page JSON
+- `GET /public/status/:userId/history` — incident + maintenance timeline
+- `GET /public/maintenance/:userId` — active/upcoming maintenance
+- `POST /maintenance` — create maintenance window (auth required)
+- `GET /user/webhook` — get alert webhook URL (auth required)
+- `PATCH /user/webhook` — set alert webhook URL (auth required)
 
-pusher does what is pick all website, push to redis stream every 3 min, which fan out to
-various workers present regionwise
-need to create worker in packages to call anywhere
+## License
+
+Private
