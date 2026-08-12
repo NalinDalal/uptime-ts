@@ -22,7 +22,7 @@ function TimelineItem({ item }: { item: HistoryItem }) {
   const started = new Date(item.started_at);
 
   return (
-    <li className="relative flex gap-4 pb-8 last:pb-0">
+    <li className="relative flex gap-3 pb-6 last:pb-0 sm:gap-4">
       <div className="flex flex-col items-center">
         <span
           className={`h-3 w-3 rounded-full border-2 ${
@@ -36,7 +36,7 @@ function TimelineItem({ item }: { item: HistoryItem }) {
         <div className="mt-2 w-px flex-1 bg-border" />
       </div>
       <div className="flex-1 pt-0">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-medium text-text">
               {isIncident ? "Incident" : item.title}
@@ -62,7 +62,7 @@ function TimelineItem({ item }: { item: HistoryItem }) {
             {isIncident ? (isOngoing ? "Ongoing" : "Resolved") : item.status === "in_progress" ? "In progress" : "Scheduled"}
           </span>
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
           <span>Started {started.toLocaleString()}</span>
           <span>
             {isOngoing ? "Ongoing" : `Resolved · lasted ${formatDuration(item.started_at, item.ended_at)}`}
@@ -94,7 +94,7 @@ export default function HistoryPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <Link href={`/statusPage/${params.userId}`} className="text-sm text-muted hover:text-text">
           ← Back
         </Link>
