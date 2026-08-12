@@ -12,15 +12,14 @@ describe("Signup endpoints", () => {
       });
       expect(false, "COntrol shouldn;t reach here");
     } catch (e) {
-      console.log(e);
-      expect(e.status).toBe(403);
+      expect((e as any).status).toBe(403);
     }
   });
 
   //correct case
   it("it is able to signup if body is correct", async () => {
     const res = await axios.post(`${BACKEND_URL}/user/signup`, {
-      email: "random username",
+      username: "random-username" + Math.random(),
       password: "password",
     });
     expect(res.status).toBe(200);
@@ -31,20 +30,19 @@ describe("Sign-in endpoints", () => {
   it("it isn't able to signin if body is incorrect", async () => {
     try {
       await axios.post(`${BACKEND_URL}/user/signin`, {
-        email: "random username",
+        username: "random-username" + Math.random(),
         password: "password",
       });
       expect(false, "Control shouldn't reach here");
     } catch (e) {
-      console.log(e);
-      expect(e.status).toBe(403);
+      expect((e as any).status).toBe(403);
     }
   });
 
   it("it is able to signin if body is incorrect", async () => {
     try {
       const res = await axios.post(`${BACKEND_URL}/user/signin`, {
-        email: "random username",
+        username: "random-username" + Math.random(),
         password: "password",
       });
       expect(res.status).toBe(200);

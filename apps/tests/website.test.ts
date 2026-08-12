@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 import axios from "axios";
 import { createUser } from "./testUtils.ts";
 import { BACKEND_URL } from "./config.ts";
@@ -45,7 +45,7 @@ describe("Website gets created", () => {
 
   it("Website is not created if header not is present", async () => {
     try {
-      const response = await axios.post(`${BASE_URL}/website`, {
+      const response = await axios.post(`${BACKEND_URL}/website`, {
         url: "https://google.com",
       });
       expect(false, "Website shouldn't be created if no auth header");
@@ -78,7 +78,7 @@ describe("Can fetch website", () => {
       },
     );
     const getWebsiteResponse = await axios.get(
-      `${BASE_URL}/status/${websiteResponse.data.id}`,
+      `${BACKEND_URL}/status/${websiteResponse.data.id}`,
       {
         headers: {
           Authorization: token1,
@@ -119,35 +119,33 @@ describe("Can fetch website", () => {
   });
 });
 
-describe("should be able to get all websites",()=>{
-    let token:string,userId:string;
-    beforeAll(async()=>{
-        const user1=await createUser();
-        token=user1.jwt;
-        userId=user1.id;
-
-        
+describe("should be able to get all websites", () => {
+    let token: string, userId: string;
+    beforeAll(async () => {
+        const user1 = await createUser();
+        token = user1.jwt;
+        userId = user1.id;
     });
-    it("can fetch its own set of websites",async()=>{
-        const websiteResponse=await axios.get(`${BASE_URL}/website`,{
-            url:'https://google.com'},{
-                headers:{
-                    Authorization:token
-                }
+    it("can fetch its own set of websites", async () => {
+        await axios.post(`${BACKEND_URL}/website`, {
+            url: "https://google.com",
+        }, {
+            headers: {
+                Authorization: token
             }
-        })
-        await axios.get(`${BASE_URL}/website`,{
-            url:'https://facebook.com'},{
-                headers:{
-                    Authorization:token
-                }
+        });
+        await axios.post(`${BACKEND_URL}/website`, {
+            url: "https://facebook.com",
+        }, {
+            headers: {
+                Authorization: token
             }
-        })
-           const response= await axios.get(`${BASE_URL}/website`,{
-                headers:{
-                    Authorization:token
-                }
-            })
-        expect(response.data.website.length==2,"Incorrect no of wensite created")
-    })
+        });
+        const response = await axios.get(`${BACKEND_URL}/websites`, {
+            headers: {
+                Authorization: token
+            }
+        });
+        expect(response.data.websites.length == 2, "Incorrect no of website created");
+    });
 })

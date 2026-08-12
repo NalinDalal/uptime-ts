@@ -6,12 +6,13 @@ export async function createUser(): Promise<{
   id: string; //returns user id
   jwt: string;
 }> {
+  const username = USER_NAME + Math.random();
   const res = await axios.post(`${BACKEND_URL}/user/signup`, {
-    username: USER_NAME,
+    username,
     password: "123123123",
   });
-  const signinRes = await axios.post(`${BACKEND_URL}/user/signup`, {
-    username: USER_NAME,
+  const signinRes = await axios.post(`${BACKEND_URL}/user/signin`, {
+    username,
     password: "123123123",
   });
   return {
