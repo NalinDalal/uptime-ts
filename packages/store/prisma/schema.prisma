@@ -5,52 +5,50 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/prisma"
+    provider = "prisma-client-js"
+    output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
-model user{
-    id      String      @id     @default(uuid())
-    username    String  @unique
-    password    String
-    websites    website[]
+model user {
+    id       String    @id @default(uuid())
+    username String    @unique
+    password String
+    websites website[]
 }
+
 model website {
-  id            String  @id    @default(uuid()) 
-  url           String
-  user_id       String
-  time_added     DateTime
-  ticks         website_tick[]
-  user          user    @relation(fields:[user_id],references:[id])
+    id         String         @id @default(uuid())
+    url        String
+    user_id    String
+    time_added DateTime
+    ticks      website_tick[]
+    user       user           @relation(fields: [user_id], references: [id])
 }
 
 model region {
-  id            String  @id    @default(uuid()) 
-  name          String
-  tickes        website_tick[]
+    id     String         @id @default(uuid())
+    name   String
+    tickes website_tick[]
 }
 
 model website_tick {
-  id                      String  @id     @default(uuid())
-  response_time_ms        Int
-  status                  website_status
-  created_at              DateTime @default(now())
-  region                  region     @relation(fields: [region_id], references: [id])
-  website                 website     @relation(fields: [website_id], references: [id])     
-  region_id               String
-  website_id              String
-  
+    id               String         @id @default(uuid())
+    response_time_ms Int
+    status           website_status
+    created_at       DateTime       @default(now())
+    region           region         @relation(fields: [region_id], references: [id])
+    website          website        @relation(fields: [website_id], references: [id])
+    region_id        String
+    website_id       String
 }
 
 enum website_status {
-  Up
-  Down
-  Unknown
+    Up
+    Down
+    Unknown
 }
-
-
