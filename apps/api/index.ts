@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import express from "express";
 import cors from "cors";
+import bcrypt from "bcrypt";
 const app = express();
 import { prismaClient } from "../../packages/store/index";
 import { authMiddleware } from "./middleware";
@@ -13,11 +14,16 @@ app.post("/website", authMiddleware, async (req, res) => {
     res.status(411).json({});
     return;
   }
+  let url = req.body.url.trim();
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
   const website = await prismaClient.website.create({
     data: {
-      url: req.body.url,
+      url,
       time_added: new Date(),
       user_id: req.userId!,
+      component: req.body.component ?? null,
     },
   });
 
@@ -61,10 +67,11 @@ app.post("/user/signup", async (req, res) => {
     return;
   }
   try {
+    const hashedPassword = await bcrypt.hash(data.data.password, 10);
     const user = await prismaClient.user.create({
       data: {
         username: data.data.username,
-        password: data.data.password,
+        password: hashedPassword,
       },
     });
     res.json({ id: user.id });
@@ -84,7 +91,7 @@ app.post("/user/signin", async (req, res) => {
       username: data.data.username,
     },
   });
-  if (user?.password != data.data.password) {
+  if (!user || !(await bcrypt.compare(data.data.password, user.password))) {
     res.status(403).send("");
     return;
   }
@@ -162,9 +169,65 @@ app.get("/public/status/:userId", async (req, res) => {
     orderBy: { started_at: "desc" },
     take: 10,
   });
+  const websiteIds = websites.map((w) => w.id);
+  const now = new Date();
+  const since = (hours: number) => new Date(now.getTime() - hours * 60 * 60 * 1000);
+
+  const periods = {
+    d1: since(24),
+    d7: since(24 * 7),
+    d30: since(24 * 30),
+  } as const;
+
+  const groupByPeriod = (createdAfter: Date) =>
+    prismaClient.website_tick.groupBy({
+      by: ["website_id", "status"],
+      where: {
+        website_id: { in: websiteIds },
+        created_at: { gte: createdAfter },
+      },
+      _count: { _all: true },
+    });
+
+  const [d1, d7, d30] = await prismaClient.$transaction([
+    groupByPeriod(periods.d1),
+    groupByPeriod(periods.d7),
+    groupByPeriod(periods.d30),
+  ]);
+
+  type Bucket = Record<string, { up: number; down: number }>;
+  const toBucket = (rows: (typeof d1)) => {
+    const bucket: Bucket = {};
+    for (const row of rows) {
+      bucket[row.website_id] ??= { up: 0, down: 0 };
+      if (row.status === "Up") bucket[row.website_id].up = row._count._all;
+      if (row.status === "Down") bucket[row.website_id].down = row._count._all;
+    }
+    return bucket;
+  };
+
+  const b1 = toBucket(d1);
+  const b7 = toBucket(d7);
+  const b30 = toBucket(d30);
+
+  const uptimePct = (up: number, down: number) => {
+    const total = up + down;
+    return total === 0 ? null : Math.round((up / total) * 10000) / 100;
+  };
+
+  const stats = websiteIds.map((id) => ({
+    website_id: id,
+    periods: {
+      d1: uptimePct(b1[id]?.up ?? 0, b1[id]?.down ?? 0),
+      d7: uptimePct(b7[id]?.up ?? 0, b7[id]?.down ?? 0),
+      d30: uptimePct(b30[id]?.up ?? 0, b30[id]?.down ?? 0),
+    },
+  }));
+
   res.json({
     websites,
     incidents,
+    stats,
   });
 });
 
