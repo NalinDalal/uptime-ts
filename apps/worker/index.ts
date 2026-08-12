@@ -15,22 +15,31 @@ if (!WORKER_ID) {
 
 async function main() {
   while (1) {
-    const response = await xReadGroup(REGION_ID, WORKER_ID);
+    try {
+      const response = await xReadGroup(REGION_ID, WORKER_ID);
 
-    if (!response) {
-      continue;
+      if (!response) {
+        continue;
+      }
+
+      const promises = response.map(async ({ message, id }) => {
+        try {
+          await fetchWebsite(message.url, message.id);
+        } catch (err) {
+          console.error(`Failed to process website ${message.id}:`, err);
+        } finally {
+          return id;
+        }
+      });
+
+      const completedIds = await Promise.all(promises);
+      console.log(completedIds.length);
+
+      xAckBulk(REGION_ID, completedIds);
+    } catch (err) {
+      console.error("Worker batch error:", err);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
-
-    let promises = response.map(({ message }) =>
-      fetchWebsite(message.url, message.id),
-    );
-    await Promise.all(promises);
-    console.log(promises.length);
-
-    xAckBulk(
-      REGION_ID,
-      response.map(({ id }) => id),
-    );
   }
 }
 
@@ -120,6 +129,7 @@ async function fetchWebsite(url: string, websiteId: string) {
     },
   });
 
+  try {
     if (prev && prev.status !== status) {
       if (status === "Down") {
         const existing = await prismaClient.incident.findFirst({
@@ -148,20 +158,55 @@ async function fetchWebsite(url: string, websiteId: string) {
         });
       }
 
-    const webhookUrl = await getWebhookUrl(websiteId);
-    if (webhookUrl) {
-      await sendAlert(
-        webhookUrl,
-        status === "Down" ? "incident_started" : "recovered",
-        {
-          website_url: url,
-          website_id: websiteId,
-          status,
-          response_time_ms: endTime - startTime,
-        },
-      );
+      const webhookUrl = await getWebhookUrl(websiteId);
+      if (webhookUrl) {
+        await sendAlert(
+          webhookUrl,
+          status === "Down" ? "incident_started" : "recovered",
+          {
+            website_url: url,
+            website_id: websiteId,
+            status,
+            response_time_ms: endTime - startTime,
+          },
+        );
+      }
     }
+  } catch (err) {
+    console.error(`Post-tick hook failed for ${websiteId}:`, err);
   }
 }
 
 main();
+
+let shuttingDown = false;
+async function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log("Shutting down worker...");
+  try {
+    await prismaClient.$disconnect();
+  } catch (err) {
+    console.error("Error during disconnect:", err);
+  }
+  process.exit(0);
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
+let shuttingDown = false;
+async function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log("Shutting down worker...");
+  try {
+    await prismaClient.$disconnect();
+  } catch (err) {
+    console.error("Error during disconnect:", err);
+  }
+  process.exit(0);
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
