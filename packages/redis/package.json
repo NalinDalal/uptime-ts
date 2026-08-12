@@ -1,10 +1,17 @@
 {
-  "name": "redis",
+  "name": "redisstream",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./client": "./index.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
+  },
+  "dependencies": {
+    "redis": "^5.0.0"
   },
   "peerDependencies": {
     "typescript": "^5"

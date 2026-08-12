@@ -24,10 +24,10 @@ async function xAdd({ url, id }: WebsiteEvent) {
 }
 
 export async function xAddBulk(websites: WebsiteEvent[]) {
-  for (let i = 0; i < websites.length; i++) {
+  for (const website of websites) {
     await xAdd({
-      url: websites[i].url,
-      id: websites[i].id,
+      url: website.url,
+      id: website.id,
     });
   }
 }

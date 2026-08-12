@@ -1,7 +1,7 @@
 # Better Stack UpTime
 
 ```mermaid
-flowchart TB
+flowchart LR
     Browser["Browser<br/>Add & view sites"] --> API["API server<br/>Node.js REST API"]
     API --> PG[("Websites DB<br/>Postgres config store")]
 
