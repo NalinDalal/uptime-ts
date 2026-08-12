@@ -57,6 +57,7 @@ export default function WebsiteDetail() {
     const [website, setWebsite] = useState<WebsiteWithTicks | null>(null);
     const [error, setError] = useState("");
     const [lastUpdated, setLastUpdated] = useState<string>("");
+    const [loading, setLoading] = useState(true);
 
     const refresh = useCallback(async () => {
         try {
@@ -66,6 +67,8 @@ export default function WebsiteDetail() {
             setError("");
         } catch {
             setError("Could not fetch status");
+        } finally {
+            setLoading(false);
         }
     }, [params.id]);
 
@@ -82,15 +85,30 @@ export default function WebsiteDetail() {
     if (error) {
         return (
             <main className="flex flex-1 items-center justify-center p-8">
-                <p className="text-sm text-red-400">{error}</p>
+                <p className="text-sm text-danger">{error}</p>
             </main>
         );
     }
 
-    if (!website) {
+    if (loading || !website) {
         return (
-            <main className="flex flex-1 items-center justify-center p-8">
-                <p className="text-sm text-muted">Loading...</p>
+            <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
+                <div className="mt-6 flex items-center justify-between">
+                    <div>
+                        <div className="h-7 w-64 animate-pulse rounded bg-surface-elevated" />
+                        <div className="mt-2 h-4 w-48 animate-pulse rounded bg-surface-elevated" />
+                        <div className="mt-1 h-3 w-32 animate-pulse rounded bg-surface-elevated" />
+                    </div>
+                    <div className="h-7 w-16 animate-pulse rounded-full bg-surface-elevated" />
+                </div>
+                <div className="mt-10">
+                    <div className="h-4 w-32 animate-pulse rounded bg-surface-elevated" />
+                    <div className="mt-3 flex items-end gap-1.5">
+                        {Array.from({ length: 12 }).map((_, i) => (
+                            <div key={i} className="h-24 flex-1 animate-pulse rounded-sm bg-surface-elevated" />
+                        ))}
+                    </div>
+                </div>
             </main>
         );
     }
@@ -131,7 +149,7 @@ export default function WebsiteDetail() {
                 ← Back
             </Link>
 
-            <div className="mt-6 flex items-center justify-between">
+            <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="font-mono text-xl font-semibold">{website.url}</h1>
                     <p className="mt-1 text-sm text-muted">
@@ -143,7 +161,7 @@ export default function WebsiteDetail() {
                 </div>
                 {latest && (
                     <span
-                        className={`shrink-0 rounded-full px-3 py-1 text-sm font-medium ${latest.status === "Up"
+                        className={`shrink-0 rounded-full px-3 py-1 text-sm font-medium transition-all duration-300 ${latest.status === "Up"
                                 ? "bg-success/15 text-success"
                                 : latest.status === "Down"
                                     ? "bg-danger/15 text-danger"
@@ -187,88 +205,6 @@ export default function WebsiteDetail() {
                             </span>
                         </div>
                     ))}
-                </div>
-            </section>
-
-            <section className="mt-12">
-                <h2 className="text-sm font-medium text-muted">
-                    Response time trend
-                </h2>
-                <div className="mt-3 h-64 w-full rounded-lg border border-border bg-surface p-4">
-                    {ticks.length === 0 ? (
-                        <p className="text-sm text-muted">No data yet.</p>
-                    ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                                <XAxis
-                                    dataKey="time"
-                                    stroke="var(--color-muted)"
-                                    tick={{ fill: "var(--color-muted)", fontSize: 11 }}
-                                    tickLine={{ stroke: "var(--color-border)" }}
-                                />
-                                <YAxis
-                                    stroke="var(--color-muted)"
-                                    tick={{ fill: "var(--color-muted)", fontSize: 11 }}
-                                    tickLine={{ stroke: "var(--color-border)" }}
-                                    label={{
-                                        value: "ms",
-                                        angle: -90,
-                                        position: "insideLeft",
-                                        fill: "var(--color-muted)",
-                                        fontSize: 11,
-                                    }}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: "var(--color-surface-elevated)",
-                                        border: "1px solid var(--color-border)",
-                                        borderRadius: "0.5rem",
-                                        color: "var(--color-text)",
-                                    }}
-                                    labelStyle={{ color: "var(--color-muted)" }}
-                                />
-                                <Legend
-                                    wrapperStyle={{ color: "var(--color-muted)", fontSize: 12 }}
-                                />
-                                {regions.map((region) => (
-                                    <Line
-                                        key={region}
-                                        type="monotone"
-                                        dataKey={region}
-                                        stroke={getRegionChartColor(region)}
-                                        strokeWidth={2}
-                                        dot={(props) => {
-                                            const status = props.payload[`${region}_status`];
-                                            if (status === "Down" || status === "Unknown") {
-                                                return (
-                                                    <circle
-                                                        cx={props.cx}
-                                                        cy={props.cy}
-                                                        r={4}
-                                                        fill="var(--color-danger)"
-                                                        stroke="var(--color-surface)"
-                                                        strokeWidth={2}
-                                                    />
-                                                );
-                                            }
-                                            return (
-                                                <circle
-                                                    cx={props.cx}
-                                                    cy={props.cy}
-                                                    r={3}
-                                                    fill={getRegionChartColor(region)}
-                                                    stroke="var(--color-surface)"
-                                                    strokeWidth={1}
-                                                />
-                                            );
-                                        }}
-                                        activeDot={{ r: 5 }}
-                                    />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
-                    )}
                 </div>
             </section>
         </main>

@@ -121,7 +121,7 @@ export default function Dashboard() {
     return (
         <main className="flex flex-1 flex-col">
             <header className="border-b border-border">
-                <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
+                <div className="mx-auto flex max-w-3xl flex-col gap-2 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-lg font-semibold tracking-tight">
                         Uptime{" "}
                         <span className="inline-block h-2 w-2 rounded-full bg-success align-middle animate-pulse-slow" />
@@ -145,7 +145,7 @@ export default function Dashboard() {
             <div className="mx-auto w-full max-w-3xl flex-1 px-6 py-8 space-y-8">
                 <section>
                     <h2 className="text-sm font-medium text-muted">Add monitor</h2>
-                    <form onSubmit={addWebsite} className="mt-3 flex gap-2">
+                    <form onSubmit={addWebsite} className="mt-3 flex flex-col gap-2 sm:flex-row">
                         <input
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
@@ -166,7 +166,7 @@ export default function Dashboard() {
                     <h2 className="text-sm font-medium text-muted">
                         Alerts <span className="text-muted/60">— webhook on status change</span>
                     </h2>
-                    <form onSubmit={saveWebhook} className="mt-3 flex gap-2">
+                    <form onSubmit={saveWebhook} className="mt-3 flex flex-col gap-2 sm:flex-row">
                         <input
                             value={webhookUrl}
                             onChange={(e) => setWebhookUrl(e.target.value)}

@@ -123,6 +123,12 @@ export default function StatusPageView() {
       setMaintenances(res.maintenances);
       setLastUpdated(new Date().toLocaleTimeString());
       setError("");
+      const allUp = res.components.length > 0 && res.components.every((c) => c.status === "Up");
+      document.title = allUp
+        ? "All systems operational"
+        : res.components.length === 0
+          ? "No monitors"
+          : "Systems degraded";
     } catch {
       setError("Could not load status");
     } finally {
@@ -140,7 +146,7 @@ export default function StatusPageView() {
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold tracking-tight">Uptime</h1>
           <span
@@ -208,21 +214,21 @@ export default function StatusPageView() {
           ? Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)
           : components.map((component) => (
               <section key={component.name}>
-                <div className="flex items-center justify-between gap-4">
-                  <h2 className="text-sm font-medium text-text">{component.name}</h2>
-                  <div className="flex items-center gap-3">
-                    <div className="flex gap-3 text-xs">
-                      <span>24h <UptimeBadge value={component.stats.d1} /></span>
-                      <span>7d <UptimeBadge value={component.stats.d7} /></span>
-                      <span>30d <UptimeBadge value={component.stats.d30} /></span>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[component.status]}`}
-                    >
-                      {component.status}
-                    </span>
-                  </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-sm font-medium text-text">{component.name}</h2>
+              <div className="flex items-center gap-3">
+                <div className="flex gap-3 text-xs">
+                  <span>24h <UptimeBadge value={component.stats.d1} /></span>
+                  <span>7d <UptimeBadge value={component.stats.d7} /></span>
+                  <span>30d <UptimeBadge value={component.stats.d30} /></span>
                 </div>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[component.status]}`}
+                >
+                  {component.status}
+                </span>
+              </div>
+            </div>
                 <div className="mt-3 space-y-3">
                   {component.websites.map((w) => (
                     <MonitorCard key={w.id} website={w} />
