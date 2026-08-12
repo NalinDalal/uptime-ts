@@ -206,7 +206,12 @@ export default function StatusPageView() {
 
       {(incidents.length > 0 || error === "") && (
         <section className="mt-12">
-          <h2 className="text-sm font-medium text-zinc-400">Incident history</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-medium text-zinc-400">Incident history</h2>
+            <Link href={`/statusPage/${params.userId}/history`} className="text-xs text-emerald-400 hover:text-emerald-300">
+              View full history
+            </Link>
+          </div>
           {incidents.length === 0 ? (
             <p className="mt-2 text-sm text-zinc-500">No incidents recorded.</p>
           ) : (

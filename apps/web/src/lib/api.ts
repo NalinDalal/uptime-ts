@@ -64,6 +64,12 @@ export type PublicStatusResponse = {
   stats: WebsiteStat[];
 };
 
+export type HistoryItem =
+  | ({ type: "incident" } & Incident)
+  | { type: "maintenance"; id: string; website_url: string; started_at: string; ended_at: string | null; title: string; status: string };
+
+export type HistoryResponse = { history: HistoryItem[] };
+
 const TOKEN_KEY = "uptime_token";
 
 export function getToken(): string | null {
@@ -125,6 +131,8 @@ export const api = {
     request<{ website: WebsiteWithTicks }>(`/status/${id}`),
   getPublicStatus: (userId: string) =>
     request<PublicStatusResponse>(`/public/status/${userId}`),
+  getHistory: (userId: string) =>
+    request<HistoryResponse>(`/public/status/${userId}/history`),
   getMaintenances: () =>
     request<{ maintenances: Maintenance[] }>("/maintenance"),
   getWebhook: () => request<{ url: string | null }>("/user/webhook"),

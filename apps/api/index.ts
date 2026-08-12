@@ -303,6 +303,53 @@ app.get("/public/status/:userId", async (req, res) => {
   });
 });
 
+app.get("/public/status/:userId/history", async (req, res) => {
+  const [incidents, maintenances] = await Promise.all([
+    prismaClient.incident.findMany({
+      where: {
+        website: { user_id: String(req.params.userId) },
+      },
+      include: {
+        website: { select: { url: true } },
+      },
+      orderBy: { started_at: "desc" },
+      take: 100,
+    }),
+    prismaClient.maintenance.findMany({
+      where: {
+        website: { user_id: String(req.params.userId) },
+      },
+      include: {
+        website: { select: { url: true } },
+      },
+      orderBy: { starts_at: "desc" },
+      take: 100,
+    }),
+  ]);
+
+  const history = [
+    ...incidents.map((inc) => ({
+      type: "incident" as const,
+      id: inc.id,
+      website_url: inc.website.url,
+      started_at: inc.started_at,
+      ended_at: inc.ended_at,
+      region_id: inc.region_id,
+    })),
+    ...maintenances.map((m) => ({
+      type: "maintenance" as const,
+      id: m.id,
+      website_url: m.website.url,
+      started_at: m.starts_at,
+      ended_at: m.ends_at,
+      title: m.title,
+      status: m.status,
+    })),
+  ].sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
+
+  res.json({ history });
+});
+
 app.get("/user/webhook", authMiddleware, async (req, res) => {
   const user = await prismaClient.user.findUnique({
     where: { id: req.userId },
