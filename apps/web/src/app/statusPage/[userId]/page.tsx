@@ -231,21 +231,6 @@ export default function StatusPageView() {
               </section>
             ))}
       </div>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[component.status]}`}
-                >
-                  {component.status}
-                </span>
-              </div>
-            </div>
-            <div className="mt-3 space-y-3">
-              {component.websites.map((w) => (
-                <MonitorCard key={w.id} website={w} />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
 
       {(incidents.length > 0 || error === "") && (
         <section className="mt-12">
