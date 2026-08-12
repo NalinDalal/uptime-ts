@@ -24,6 +24,15 @@ const STATUS_STYLES: Record<TickStatus, string> = {
 const REGION_COLORS_INDEX: Record<string, number> = {};
 let regionColorCounter = 0;
 
+const REGION_COLORS = [
+    "border-l-sky-400",
+    "border-l-violet-400",
+    "border-l-amber-400",
+    "border-l-rose-400",
+    "border-l-teal-400",
+    "border-l-orange-400",
+];
+
 function getRegionColor(regionId: string) {
     if (!(regionId in REGION_COLORS_INDEX)) {
         REGION_COLORS_INDEX[regionId] = regionColorCounter++;
