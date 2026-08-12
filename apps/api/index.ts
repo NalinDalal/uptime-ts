@@ -9,6 +9,39 @@ import { AuthInput } from "./types";
 app.use(express.json());
 app.use(cors());
 
+const authAttempts = new Map<string, { count: number; firstAttempt: number }>();
+
+function rateLimitAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const key = req.ip || req.socket.remoteAddress || "unknown";
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const maxAttempts = 10;
+
+  const record = authAttempts.get(key);
+  if (record) {
+    if (now - record.firstAttempt > windowMs) {
+      authAttempts.set(key, { count: 1, firstAttempt: now });
+      return next();
+    }
+    if (record.count >= maxAttempts) {
+      return res.status(429).json({ message: "Too many attempts. Try again later." });
+    }
+    record.count++;
+  } else {
+    authAttempts.set(key, { count: 1, firstAttempt: now });
+  }
+  next();
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of authAttempts.entries()) {
+    if (now - record.firstAttempt > 15 * 60 * 1000) {
+      authAttempts.delete(key);
+    }
+  }
+}, 60 * 1000);
+
 app.post("/website", authMiddleware, async (req, res) => {
   if (!req.body.url) {
     res.status(411).json({});
@@ -60,7 +93,7 @@ app.get("/status/:websiteId", authMiddleware, async (req, res) => {
   res.json({ website: { url: website.url, id: website.id, user_id: website.user_id, ticks: website.ticks } });
 });
 
-app.post("/user/signup", async (req, res) => {
+app.post("/user/signup", rateLimitAuth, async (req, res) => {
   const data = AuthInput.safeParse(req.body);
   if (!data.success) {
     res.status(403).json({ message: "Invalid input" });
@@ -84,7 +117,7 @@ app.post("/user/signup", async (req, res) => {
     }
   }
 });
-app.post("/user/signin", async (req, res) => {
+app.post("/user/signin", rateLimitAuth, async (req, res) => {
   const data = AuthInput.safeParse(req.body);
   if (!data.success) {
     res.status(403).json({ message: "Invalid input" });
