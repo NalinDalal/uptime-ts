@@ -26,6 +26,23 @@ function SkeletonRow() {
     );
 }
 
+function SummaryBadge({ label, value, tone }: { label: string; value: number; tone?: "success" | "danger" | "muted" }) {
+    const color =
+        tone === "success"
+            ? "border-success/30 bg-success/10 text-success"
+            : tone === "danger"
+                ? "border-danger/30 bg-danger/10 text-danger"
+                : tone === "muted"
+                    ? "border-muted/30 bg-muted/10 text-muted"
+                    : "border-border bg-surface text-text";
+    return (
+        <div className={`rounded-lg border px-3 py-1.5 text-xs ${color}`}>
+            <span className="text-[10px] uppercase tracking-wider opacity-70">{label}</span>
+            <span className="ml-1.5 text-sm font-medium">{value}</span>
+        </div>
+    );
+}
+
 export default function Dashboard() {
     const router = useRouter();
     const [websites, setWebsites] = useState<Website[]>([]);
@@ -219,6 +236,26 @@ export default function Dashboard() {
                         <h2 className="text-sm font-medium text-muted">Monitors</h2>
                         {loading && <span className="text-xs text-muted">Refreshing...</span>}
                     </div>
+                    {websites.length > 0 && !loading && (
+                        <div className="mt-3 flex flex-wrap gap-3">
+                            <SummaryBadge label="Total" value={websites.length} />
+                            <SummaryBadge
+                                label="Up"
+                                value={websites.filter((w) => w.ticks?.[0]?.status === "Up").length}
+                                tone="success"
+                            />
+                            <SummaryBadge
+                                label="Down"
+                                value={websites.filter((w) => w.ticks?.[0]?.status === "Down").length}
+                                tone="danger"
+                            />
+                            <SummaryBadge
+                                label="Unknown"
+                                value={websites.filter((w) => w.ticks?.[0]?.status === "Unknown").length}
+                                tone="muted"
+                            />
+                        </div>
+                    )}
                     {websites.length === 0 && !loading ? (
                         <p className="mt-4 text-sm text-muted">
                             No monitors yet. Add one above to start checking uptime.

@@ -50,12 +50,12 @@ if (!WORKER_ID) {
 }
 
 async function main() {
-  while (1) {
+  mainLoop: while (true) {
     try {
       const response = await xReadGroup(REGION_ID, WORKER_ID);
 
       if (!response) {
-        continue;
+        continue mainLoop;
       }
 
       const promises = response.map(async ({ message, id }) => {
