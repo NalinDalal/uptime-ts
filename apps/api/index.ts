@@ -169,6 +169,7 @@ app.get("/public/status/:userId", async (req, res) => {
     orderBy: { started_at: "desc" },
     take: 10,
   });
+
   const websiteIds = websites.map((w) => w.id);
   const now = new Date();
   const since = (hours: number) => new Date(now.getTime() - hours * 60 * 60 * 1000);
@@ -215,7 +216,7 @@ app.get("/public/status/:userId", async (req, res) => {
     return total === 0 ? null : Math.round((up / total) * 10000) / 100;
   };
 
-  const stats = websiteIds.map((id) => ({
+  const websiteStats = websiteIds.map((id) => ({
     website_id: id,
     periods: {
       d1: uptimePct(b1[id]?.up ?? 0, b1[id]?.down ?? 0),
@@ -224,10 +225,68 @@ app.get("/public/status/:userId", async (req, res) => {
     },
   }));
 
+  const statsMap = new Map(websiteStats.map((s) => [s.website_id, s]));
+
+  const groups = websites.reduce<Record<string, typeof websites>>((acc, w) => {
+    const key = w.component || "Uncategorized";
+    acc[key] ??= [];
+    acc[key].push(w);
+    return acc;
+  }, {});
+
+  const components = Object.entries(groups).map<{
+    name: string;
+    websites: (typeof websites)[number][];
+    stats: { d1: number | null; d7: number | null; d30: number | null };
+    status: "Up" | "Down" | "Unknown";
+  }>(([name, group]) => {
+    const latest = group
+      .flatMap((w) => w.ticks)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
+    let upD1 = 0;
+    let downD1 = 0;
+    let upD7 = 0;
+    let downD7 = 0;
+    let upD30 = 0;
+    let downD30 = 0;
+
+    for (const w of group) {
+      const s = statsMap.get(w.id);
+      if (!s) continue;
+      upD1 += s.periods.d1 === null ? 0 : Math.round((s.periods.d1 / 100) * 100) / 100;
+      downD1 += s.periods.d1 === null ? 0 : Math.round((100 - s.periods.d1) / 100 * 100) / 100;
+      upD7 += s.periods.d7 === null ? 0 : Math.round((s.periods.d7 / 100) * 100) / 100;
+      downD7 += s.periods.d7 === null ? 0 : Math.round((100 - s.periods.d7) / 100 * 100) / 100;
+      upD30 += s.periods.d30 === null ? 0 : Math.round((s.periods.d30 / 100) * 100) / 100;
+      downD30 += s.periods.d30 === null ? 0 : Math.round((100 - s.periods.d30) / 100 * 100) / 100;
+    }
+
+    const aggregateUptime = (up: number, down: number) => {
+      const total = up + down;
+      return total === 0 ? null : Math.round((up / total) * 10000) / 100;
+    };
+
+    const status =
+      latest?.status === "Up" ? "Up" : latest?.status === "Down" ? "Down" : "Unknown";
+
+    return {
+      name,
+      websites: group,
+      stats: {
+        d1: aggregateUptime(upD1, downD1),
+        d7: aggregateUptime(upD7, downD7),
+        d30: aggregateUptime(upD30, downD30),
+      },
+      status,
+    };
+  });
+
   res.json({
-    websites,
+    components,
     incidents,
-    stats,
+    websites,
+    stats: websiteStats,
   });
 });
 
