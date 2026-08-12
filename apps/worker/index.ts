@@ -2,6 +2,42 @@ import axios from "axios";
 import { xAckBulk, xReadGroup } from "redisstream/client";
 import { prismaClient } from "store/client";
 
+type LogLevel = "debug" | "info" | "warn" | "error";
+
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
+
+const currentLevel = (process.env.LOG_LEVEL as LogLevel) || "info";
+
+function structuredLog(level: LogLevel, message: string, meta?: Record<string, any>) {
+  if (LOG_LEVELS[level] < LOG_LEVELS[currentLevel]) return;
+
+  const entry: Record<string, any> = {
+    level,
+    message,
+    time: new Date().toISOString(),
+    region: REGION_ID,
+    worker: WORKER_ID,
+  };
+
+  if (meta) {
+    entry.meta = meta;
+  }
+
+  console.log(JSON.stringify(entry));
+}
+
+const logger = {
+  debug: (message: string, meta?: Record<string, any>) => structuredLog("debug", message, meta),
+  info: (message: string, meta?: Record<string, any>) => structuredLog("info", message, meta),
+  warn: (message: string, meta?: Record<string, any>) => structuredLog("warn", message, meta),
+  error: (message: string, meta?: Record<string, any>) => structuredLog("error", message, meta),
+};
+
 const REGION_ID = process.env.REGION_ID!;
 const WORKER_ID = process.env.WORKER_ID!;
 
@@ -10,7 +46,7 @@ if (!REGION_ID) {
 }
 
 if (!WORKER_ID) {
-  throw new Error("Region not provided");
+  throw new Error("Worker ID not provided");
 }
 
 async function main() {
@@ -26,18 +62,24 @@ async function main() {
         try {
           await fetchWebsite(message.url, message.id);
         } catch (err) {
-          console.error(`Failed to process website ${message.id}:`, err);
+          logger.error("Failed to process website", {
+            website_id: message.id,
+            url: message.url,
+            error: err instanceof Error ? { message: err.message, stack: err.stack } : String(err),
+          });
         } finally {
           return id;
         }
       });
 
       const completedIds = await Promise.all(promises);
-      console.log(completedIds.length);
+      logger.info("Batch processed", { count: completedIds.length });
 
       xAckBulk(REGION_ID, completedIds);
     } catch (err) {
-      console.error("Worker batch error:", err);
+      logger.error("Worker batch error", {
+        error: err instanceof Error ? { message: err.message, stack: err.stack } : String(err),
+      });
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
@@ -71,7 +113,10 @@ async function sendAlert(
       ...payload,
     });
   } catch (err) {
-    console.log("Webhook delivery failed", err);
+    logger.warn("Webhook delivery failed", {
+      webhook_url: webhookUrl,
+      error: err instanceof Error ? { message: err.message } : String(err),
+    });
   }
 }
 
@@ -109,12 +154,29 @@ async function fetchWebsite(url: string, websiteId: string) {
     }
   } catch (err) {
     status = "Unknown";
-    if (axios.isAxiosError(err) && err.code === "ECONNABORTED") {
-      console.error(`Timeout reaching ${url} in ${REGION_ID}`);
-    } else if (axios.isAxiosError(err) && err.code) {
-      console.error(`Network error (${err.code}) reaching ${url} in ${REGION_ID}: ${err.message}`);
+    if (axios.isAxiosError(err)) {
+      if (err.code === "ECONNABORTED") {
+        logger.warn("Timeout reaching website", { url, region: REGION_ID });
+      } else if (err.code) {
+        logger.warn("Network error reaching website", {
+          url,
+          region: REGION_ID,
+          code: err.code,
+          message: err.message,
+        });
+      } else {
+        logger.error("Unexpected error reaching website", {
+          url,
+          region: REGION_ID,
+          error: err instanceof Error ? { message: err.message, stack: err.stack } : String(err),
+        });
+      }
     } else {
-      console.error(`Unexpected error reaching ${url} in ${REGION_ID}:`, err);
+      logger.error("Unexpected error reaching website", {
+        url,
+        region: REGION_ID,
+        error: err instanceof Error ? { message: err.message, stack: err.stack } : String(err),
+      });
     }
   }
   const endTime = Date.now();
@@ -173,7 +235,10 @@ async function fetchWebsite(url: string, websiteId: string) {
       }
     }
   } catch (err) {
-    console.error(`Post-tick hook failed for ${websiteId}:`, err);
+    logger.error("Post-tick hook failed", {
+      website_id: websiteId,
+      error: err instanceof Error ? { message: err.message, stack: err.stack } : String(err),
+    });
   }
 }
 
@@ -183,27 +248,13 @@ let shuttingDown = false;
 async function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log("Shutting down worker...");
+  logger.info("Shutting down worker");
   try {
     await prismaClient.$disconnect();
   } catch (err) {
-    console.error("Error during disconnect:", err);
-  }
-  process.exit(0);
-}
-
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
-
-let shuttingDown = false;
-async function shutdown() {
-  if (shuttingDown) return;
-  shuttingDown = true;
-  console.log("Shutting down worker...");
-  try {
-    await prismaClient.$disconnect();
-  } catch (err) {
-    console.error("Error during disconnect:", err);
+    logger.error("Error during disconnect", {
+      error: err instanceof Error ? { message: err.message, stack: err.stack } : String(err),
+    });
   }
   process.exit(0);
 }
