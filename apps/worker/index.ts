@@ -69,6 +69,10 @@ async function sendAlert(
 async function fetchWebsite(url: string, websiteId: string) {
   const startTime = Date.now();
 
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+
   const prev = await prismaClient.website_tick.findFirst({
     where: {
       website_id: websiteId,
@@ -78,12 +82,31 @@ async function fetchWebsite(url: string, websiteId: string) {
     take: 1,
   });
 
-  let status: "Up" | "Down";
+  let status: "Up" | "Down" | "Unknown";
+  let httpStatus: number | null = null;
+
   try {
-    const res = await axios.get(url, { validateStatus: () => true });
-    status = res.status < 500 ? "Up" : "Down";
-  } catch {
-    status = "Down";
+    const res = await axios.get(url, {
+      validateStatus: () => true,
+      timeout: 10000,
+    });
+    httpStatus = res.status;
+    if (res.status >= 200 && res.status < 400) {
+      status = "Up";
+    } else if (res.status >= 400 && res.status < 500) {
+      status = "Down";
+    } else {
+      status = "Down";
+    }
+  } catch (err) {
+    status = "Unknown";
+    if (axios.isAxiosError(err) && err.code === "ECONNABORTED") {
+      console.error(`Timeout reaching ${url} in ${REGION_ID}`);
+    } else if (axios.isAxiosError(err) && err.code) {
+      console.error(`Network error (${err.code}) reaching ${url} in ${REGION_ID}: ${err.message}`);
+    } else {
+      console.error(`Unexpected error reaching ${url} in ${REGION_ID}:`, err);
+    }
   }
   const endTime = Date.now();
 
@@ -91,29 +114,39 @@ async function fetchWebsite(url: string, websiteId: string) {
     data: {
       response_time_ms: endTime - startTime,
       status,
+      http_status: httpStatus,
       region_id: REGION_ID,
       website_id: websiteId,
     },
   });
 
-  if (prev && prev.status !== status) {
-    if (status === "Down") {
-      await prismaClient.incident.create({
-        data: {
-          website_id: websiteId,
-          region_id: REGION_ID,
-        },
-      });
-    } else {
-      await prismaClient.incident.updateMany({
-        where: {
-          website_id: websiteId,
-          region_id: REGION_ID,
-          ended_at: null,
-        },
-        data: { ended_at: new Date() },
-      });
-    }
+    if (prev && prev.status !== status) {
+      if (status === "Down") {
+        const existing = await prismaClient.incident.findFirst({
+          where: {
+            website_id: websiteId,
+            region_id: REGION_ID,
+            ended_at: null,
+          },
+        });
+        if (!existing) {
+          await prismaClient.incident.create({
+            data: {
+              website_id: websiteId,
+              region_id: REGION_ID,
+            },
+          });
+        }
+      } else {
+        await prismaClient.incident.updateMany({
+          where: {
+            website_id: websiteId,
+            region_id: REGION_ID,
+            ended_at: null,
+          },
+          data: { ended_at: new Date() },
+        });
+      }
 
     const webhookUrl = await getWebhookUrl(websiteId);
     if (webhookUrl) {
