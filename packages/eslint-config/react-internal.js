@@ -7,9 +7,17 @@ import globals from "globals";
 import { config as baseConfig } from "./base.js";
 
 /**
- * A custom ESLint configuration for libraries that use React.
+ * ESLint configuration for internal React libraries in the monorepo.
  *
- * @type {import("eslint").Linter.Config[]} */
+ * Extends the shared `base` config with:
+ * - Recommended JS linting rules.
+ * - Prettier compatibility (disables conflicting ESLint rules).
+ * - TypeScript-ESLint recommended rules.
+ * - React plugin recommended rules.
+ * - React Hooks plugin recommended rules (with `react/react-in-jsx-scope` turned off for the new JSX transform).
+ *
+ * @type {import("eslint").Linter.Config[]}
+ */
 export const config = [
   ...baseConfig,
   js.configs.recommended,

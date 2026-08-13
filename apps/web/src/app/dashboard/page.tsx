@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, clearToken, getToken, type Website, type TickStatus, type Incident } from "@/lib/api";
 
+/**
+ * Renders a compact status badge for a given tick status.
+ *
+ * @typedef {Object} StatusPillProps
+ * @property {TickStatus | undefined} status - The tick status to render.
+ * @returns {JSX.Element} A rounded pill badge, or "no checks yet" in muted text when status is undefined.
+ */
 function StatusPill({ status }: { status: TickStatus | undefined }) {
     if (!status) return <span className="text-xs text-muted">no checks yet</span>;
     const styles = {
@@ -15,6 +22,13 @@ function StatusPill({ status }: { status: TickStatus | undefined }) {
     return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${styles}`}>{status}</span>;
 }
 
+/**
+ * Renders a skeleton loading row that mimics the shape of a website list item.
+ *
+ * Used as a placeholder while the dashboard data is being fetched.
+ *
+ * @returns {JSX.Element}
+ */
 function SkeletonRow() {
     return (
         <li className="px-4 py-3">
@@ -26,6 +40,23 @@ function SkeletonRow() {
     );
 }
 
+/**
+ * Props for the `SummaryBadge` metric display component.
+ *
+ * @typedef {Object} SummaryBadgeProps
+ * @property {string} label - Metric name (e.g. "Total", "Up", "Down").
+ * @property {number} value - Metric value to display.
+ * @property {"success" | "danger" | "muted"} [tone] - Optional color tone for the badge border/background.
+ */
+
+/**
+ * Renders a small summary metric badge with an uppercase label and numeric value.
+ *
+ * When no `tone` is provided, a neutral surface style is used.
+ *
+ * @param {SummaryBadgeProps} props - Component props.
+ * @returns {JSX.Element}
+ */
 function SummaryBadge({ label, value, tone }: { label: string; value: number; tone?: "success" | "danger" | "muted" }) {
     const color =
         tone === "success"
@@ -43,6 +74,21 @@ function SummaryBadge({ label, value, tone }: { label: string; value: number; to
     );
 }
 
+/**
+ * Main dashboard page for authenticated users.
+ *
+ * Allows users to:
+ * - Add new website monitors via a URL input.
+ * - Configure an alert webhook URL for incident notifications.
+ * - View recent incidents across all monitored websites.
+ * - See a list of all monitors with their latest status and summary stats.
+ * - Access the public status page for their account.
+ * - Sign out.
+ *
+ * Redirects unauthenticated users to `/auth`. Polls for monitor updates every 10 seconds.
+ *
+ * @returns {JSX.Element}
+ */
 export default function Dashboard() {
     const router = useRouter();
     const [websites, setWebsites] = useState<Website[]>([]);
@@ -53,16 +99,32 @@ export default function Dashboard() {
     const [incidents, setIncidents] = useState<Incident[]>([]);
     const [loading, setLoading] = useState(true);
 
+    /**
+     * Formats an ISO timestamp into a localized human-readable string.
+     *
+     * @param {string} iso - ISO 8601 timestamp.
+     * @returns {string} Localized date/time string.
+     */
     function formatTime(iso: string) {
         return new Date(iso).toLocaleString();
     }
 
+    /**
+     * Calculates a human-readable duration between two ISO timestamps.
+     *
+     * @param {string} startIso - Start timestamp (ISO 8601).
+     * @param {string} endIso - End timestamp (ISO 8601).
+     * @returns {string} Duration in minutes or hours (e.g. `"5 mins"`, `"1h 30m"`).
+     */
     function formatDuration(startIso: string, endIso: string) {
         const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
         const mins = Math.max(1, Math.round(ms / 60000));
         return `${mins} min${mins === 1 ? "" : "s"}`;
     }
 
+    /**
+     * Fetches the authenticated user's websites from the API and stores them in state.
+     */
     const refresh = useCallback(async () => {
         try {
             const res = await api.getWebsites();
@@ -75,6 +137,9 @@ export default function Dashboard() {
         }
     }, []);
 
+    /**
+     * Loads the authenticated user's current webhook URL from the API.
+     */
     const loadWebhook = useCallback(async () => {
         try {
             const res = await api.getWebhook();
@@ -84,6 +149,10 @@ export default function Dashboard() {
         }
     }, []);
 
+    /**
+     * Fetches recent incidents for the authenticated user.
+     * Failures are silently ignored since incidents are secondary data.
+     */
     const refreshIncidents = useCallback(async () => {
         try {
             const res = await api.getIncidents();
@@ -105,6 +174,11 @@ export default function Dashboard() {
         return () => clearInterval(id);
     }, [refresh, refreshIncidents, loadWebhook, router]);
 
+    /**
+     * Handles the webhook URL form submission.
+     *
+     * @param {React.FormEvent} e - The form submission event.
+     */
     async function saveWebhook(e: React.FormEvent) {
         e.preventDefault();
         setWebhookError("");
@@ -115,6 +189,11 @@ export default function Dashboard() {
         }
     }
 
+    /**
+     * Handles the add-website form submission.
+     *
+     * @param {React.FormEvent} e - The form submission event.
+     */
     async function addWebsite(e: React.FormEvent) {
         e.preventDefault();
         if (!url) return;
@@ -130,6 +209,9 @@ export default function Dashboard() {
 
     const latestUserId = websites[websites.length - 1]?.user_id;
 
+    /**
+     * Clears the stored JWT and redirects the user to the authentication page.
+     */
     function logout() {
         clearToken();
         router.push("/auth");

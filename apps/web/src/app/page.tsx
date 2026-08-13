@@ -4,18 +4,35 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+/**
+ * Static mock region data shown on the landing page to demonstrate multi-region monitoring visually.
+ *
+ * @type {Array<{ name: string; status: "up" | "degraded" | "down"; latency: number }>}
+ */
 const regions = [
   { name: "US-East", status: "up", latency: 42 },
   { name: "EU-West", status: "up", latency: 78 },
   { name: "AP-South", status: "degraded", latency: 340 },
 ];
 
+/**
+ * Maps a region status string to the corresponding Tailwind background utility class for the pulse indicator dot.
+ *
+ * @type {Record<string, string>}
+ */
 const statusColor = {
   up: "bg-success",
   degraded: "bg-warning",
   down: "bg-error",
 } as const;
 
+/**
+ * Renders a strip of animated region status indicators for the landing page hero section.
+ *
+ * Each region shows a pulsing dot and its simulated latency to communicate the multi-region monitoring concept.
+ *
+ * @returns {JSX.Element}
+ */
 function RegionPulseStrip() {
   return (
     <div className="flex flex-wrap gap-3">
@@ -45,6 +62,14 @@ function RegionPulseStrip() {
   );
 }
 
+/**
+ * Landing page component for the public-facing Uptime marketing site.
+ *
+ * Renders a hero section with headline, CTA buttons, the animated `RegionPulseStrip`,
+ * and three feature cards (multi-region checks, incident tracking, public status pages).
+ *
+ * @returns {JSX.Element}
+ */
 export default function LandingPage() {
   const router = useRouter();
 
@@ -117,6 +142,20 @@ export default function LandingPage() {
   );
 }
 
+/**
+ * Props for a single feature card on the landing page.
+ *
+ * @typedef {Object} FeatureCardProps
+ * @property {string} title - Short feature headline.
+ * @property {string} description - One-sentence feature description.
+ */
+
+/**
+ * Renders a single feature highlight card used in the landing page grid.
+ *
+ * @param {FeatureCardProps} props - Component props.
+ * @returns {JSX.Element}
+ */
 function FeatureCard({ title, description }: { title: string; description: string }) {
   return (
     <div className="rounded-md border border-border bg-surface p-5">

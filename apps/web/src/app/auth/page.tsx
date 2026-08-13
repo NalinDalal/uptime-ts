@@ -4,6 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setToken } from "@/lib/api";
 
+/**
+ * Authentication page component for signing in and signing up.
+ *
+ * Renders a form with username and password fields, toggles between sign-in and sign-up modes,
+ * and redirects to `/dashboard` upon successful authentication.
+ *
+ * @returns {JSX.Element}
+ */
 export default function AuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -12,6 +20,14 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Handles the sign-in / sign-up form submission.
+   *
+   * In `"signup"` mode, calls `api.signup` first, then always calls `api.signin`.
+   * On success, stores the returned JWT via `setToken` and navigates to `/dashboard`.
+   *
+   * @param {React.FormEvent} e - The form submission event.
+   */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -30,6 +46,9 @@ export default function AuthPage() {
     }
   }
 
+  /**
+   * Toggles between sign-in and sign-up mode and clears any previous error.
+   */
   function switchMode() {
     setError("");
     setMode(mode === "signin" ? "signup" : "signin");

@@ -8,10 +8,15 @@ import pluginNext from "@next/eslint-plugin-next";
 import { config as baseConfig } from "./base.js";
 
 /**
- * A custom ESLint configuration for libraries that use Next.js.
+ * ESLint configuration tailored for Next.js applications in the monorepo.
+ *
+ * Extends the shared `base` config with:
+ * - Next.js recommended rules and Core Web Vitals rules from `@next/eslint-plugin-next`.
+ * - React recommended rules (serviceworker globals included for Next.js).
+ * - React Hooks recommended rules (with `react/react-in-jsx-scope` turned off for the new JSX transform).
  *
  * @type {import("eslint").Linter.Config[]}
- * */
+ */
 export const nextJsConfig = [
   ...baseConfig,
   js.configs.recommended,

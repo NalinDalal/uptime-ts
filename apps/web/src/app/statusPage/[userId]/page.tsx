@@ -5,24 +5,46 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, type WebsiteWithTicks, type TickStatus, type Incident, type ComponentStatus, type Maintenance } from "@/lib/api";
 
+/**
+ * Maps tick status values to Tailwind background utility classes used in the tick bar.
+ *
+ * @type {Record<TickStatus, string>}
+ */
 const TICK_COLORS: Record<TickStatus, string> = {
   Up: "bg-success",
   Down: "bg-danger",
   Unknown: "bg-muted",
 };
 
+/**
+ * Maps component-level status values to combined background/text Tailwind utility classes.
+ *
+ * @type {Record<string, string>}
+ */
 const STATUS_STYLES: Record<string, string> = {
   Up: "bg-success/15 text-success",
   Down: "bg-danger/15 text-danger",
   Unknown: "bg-muted/15 text-muted",
 };
 
+/**
+ * Maps maintenance `status` values to their corresponding Tailwind badge styles.
+ *
+ * @type {Record<string, string>}
+ */
 const MAINTENANCE_STATUS_STYLES: Record<string, string> = {
   scheduled: "bg-accent/15 text-accent",
   in_progress: "bg-warning/15 text-warning",
   completed: "bg-muted/15 text-muted",
 };
 
+/**
+ * Renders a skeleton loading placeholder for a monitor card.
+ *
+ * Shows an animated pulse placeholder matching the shape of `MonitorCard`.
+ *
+ * @returns {JSX.Element}
+ */
 function SkeletonCard() {
   return (
     <div className="rounded-md border border-border bg-surface p-5">
@@ -39,6 +61,19 @@ function SkeletonCard() {
   );
 }
 
+/**
+ * Props accepted by the `MonitorCard` component.
+ *
+ * @typedef {Object} MonitorCardProps
+ * @property {WebsiteWithTicks} website - The website and its associated ticks to display.
+ */
+
+/**
+ * Renders a single monitor card showing the website URL, latest status badge, tick distribution bar, and uptime percentage.
+ *
+ * @param {MonitorCardProps} props - Component props.
+ * @returns {JSX.Element}
+ */
 function MonitorCard({ website }: { website: WebsiteWithTicks }) {
   const ticks = [...website.ticks].reverse();
   const latest = ticks[ticks.length - 1];
@@ -88,6 +123,24 @@ function MonitorCard({ website }: { website: WebsiteWithTicks }) {
   );
 }
 
+/**
+ * Props accepted by the `UptimeBadge` component.
+ *
+ * @typedef {Object} UptimeBadgeProps
+ * @property {number | null} value - The uptime percentage to display, or `null` when no data is available.
+ */
+
+/**
+ * Renders a color-coded uptime percentage badge.
+ *
+ * - Green (`text-success`) when value is 99% or higher.
+ * - Yellow/amber (`text-warning`) when between 95% and 99%.
+ * - Red (`text-danger`) when below 95%.
+ * - Displays "No data" in muted text when the value is `null`.
+ *
+ * @param {UptimeBadgeProps} props - Component props.
+ * @returns {JSX.Element}
+ */
 function UptimeBadge({ value }: { value: number | null }) {
   if (value === null) {
     return <span className="text-xs text-muted">No data</span>;
@@ -99,6 +152,14 @@ function UptimeBadge({ value }: { value: number | null }) {
   return <span className={`text-xs font-medium ${color}`}>{value.toFixed(2)}%</span>;
 }
 
+/**
+ * Converts an ISO timestamp string into a localized human-readable string.
+ *
+ * Returns an empty string when given a null, undefined, or invalid date.
+ *
+ * @param {string | null | undefined} iso - ISO 8601 timestamp string.
+ * @returns {string} Localized date/time string, or `""` if invalid.
+ */
 function formatMaintenanceTime(iso: string | null | undefined) {
   if (!iso) return "";
   const date = new Date(iso);
@@ -106,6 +167,19 @@ function formatMaintenanceTime(iso: string | null | undefined) {
   return date.toLocaleString();
 }
 
+/**
+ * Main status page view for a given user.
+ *
+ * Fetches the user's public status data (components, incidents, maintenances) and renders:
+ * - An overall health badge and last-updated timestamp.
+ * - A list of scheduled/upcoming maintenances.
+ * - Component-grouped monitor cards with uptime stats and tick distribution bars.
+ * - A recent incident history section with a link to the full history page.
+ *
+ * Polls the backend every 30 seconds for live updates.
+ *
+ * @returns {JSX.Element}
+ */
 export default function StatusPageView() {
   const params = useParams<{ userId: string }>();
   const [components, setComponents] = useState<ComponentStatus[]>([]);
@@ -115,6 +189,10 @@ export default function StatusPageView() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>("");
 
+  /**
+   * Fetches fresh public status data from the API and updates component state.
+   * Also updates the browser tab title to reflect current system health.
+   */
   const refresh = useCallback(async () => {
     try {
       const res = await api.getPublicStatus(params.userId);

@@ -15,15 +15,31 @@ import {
 } from "recharts";
 import { api, getToken, type WebsiteWithTicks, type TickStatus } from "@/lib/api";
 
+/**
+ * Maps tick status values to Tailwind background utility classes for the bar chart segments.
+ *
+ * @type {Record<TickStatus, string>}
+ */
 const STATUS_STYLES: Record<TickStatus, string> = {
     Up: "bg-success",
     Down: "bg-danger",
     Unknown: "bg-muted",
 };
 
+/**
+ * Assigns a deterministic CSS border color class to each region ID
+ * so different regions are visually distinguishable in the bar chart.
+ *
+ * @type {Record<string, number>}
+ */
 const REGION_COLORS_INDEX: Record<string, number> = {};
 let regionColorCounter = 0;
 
+/**
+ * Ordered palette of Tailwind border color utilities for region differentiation.
+ *
+ * @type {string[]}
+ */
 const REGION_COLORS = [
     "border-l-sky-400",
     "border-l-violet-400",
@@ -33,6 +49,14 @@ const REGION_COLORS = [
     "border-l-orange-400",
 ];
 
+/**
+ * Returns a consistent border-left color class for a given region ID.
+ *
+ * New regions are assigned the next color in the palette on first encounter.
+ *
+ * @param {string} regionId - The region identifier to look up or assign.
+ * @returns {string} A Tailwind border color utility class.
+ */
 function getRegionColor(regionId: string) {
     if (!(regionId in REGION_COLORS_INDEX)) {
         REGION_COLORS_INDEX[regionId] = regionColorCounter++;
@@ -40,8 +64,21 @@ function getRegionColor(regionId: string) {
     return REGION_COLORS[REGION_COLORS_INDEX[regionId] % REGION_COLORS.length];
 }
 
+/**
+ * Maps region IDs to hex chart colors for the Recharts line series.
+ *
+ * @type {Record<string, string>}
+ */
 const REGION_CHART_COLORS: Record<string, string> = {};
 
+/**
+ * Returns a consistent hex color for a given region ID in the line chart.
+ *
+ * New regions are assigned the next color in the palette on first encounter.
+ *
+ * @param {string} regionId - The region identifier to look up or assign.
+ * @returns {string} A hex color string.
+ */
 function getRegionChartColor(regionId: string): string {
     if (!(regionId in REGION_CHART_COLORS)) {
         const idx = Object.keys(REGION_CHART_COLORS).length;
@@ -51,6 +88,19 @@ function getRegionChartColor(regionId: string): string {
     return REGION_CHART_COLORS[regionId];
 }
 
+/**
+ * Detailed website status page component.
+ *
+ * Displays:
+ * - URL and latest status badge.
+ * - Summary stats: uptime %, average latency, p95 latency, total checks.
+ * - A per-check bar chart colored by status and region.
+ * - A Recharts line chart showing response time trends per region.
+ *
+ * Redirects unauthenticated users to `/auth`. Polls for updates every 10 seconds.
+ *
+ * @returns {JSX.Element}
+ */
 export default function WebsiteDetail() {
     const params = useParams<{ id: string }>();
     const router = useRouter();
@@ -59,6 +109,9 @@ export default function WebsiteDetail() {
     const [lastUpdated, setLastUpdated] = useState<string>("");
     const [loading, setLoading] = useState(true);
 
+    /**
+     * Fetches the latest status for the current website from the API.
+     */
     const refresh = useCallback(async () => {
         try {
             const res = await api.getWebsiteStatus(params.id);

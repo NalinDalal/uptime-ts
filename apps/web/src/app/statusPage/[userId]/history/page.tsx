@@ -5,6 +5,15 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api, type HistoryItem } from "@/lib/api";
 
+/**
+ * Formats a duration between two ISO timestamps into a compact human-readable string.
+ *
+ * Examples: `"3 min"`, `"1h 15m"`, `"2h"`.
+ *
+ * @param {string} startedAt - ISO timestamp marking the beginning of the period.
+ * @param {string | null} endedAt - ISO timestamp marking the end, or `null` for an ongoing period.
+ * @returns {string} Formatted duration string.
+ */
 function formatDuration(startedAt: string, endedAt: string | null) {
   const start = new Date(startedAt);
   const end = endedAt ? new Date(endedAt) : new Date();
@@ -16,6 +25,21 @@ function formatDuration(startedAt: string, endedAt: string | null) {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
+/**
+ * Props for a single timeline entry on the history page.
+ *
+ * @typedef {Object} TimelineItemProps
+ * @property {HistoryItem} item - The history entry to render.
+ */
+
+/**
+ * Renders a single incident or maintenance event as a timeline entry.
+ *
+ * Visual indicators differentiate between incidents (resolved/ongoing) and maintenance windows (scheduled/in-progress).
+ *
+ * @param {TimelineItemProps} props - Component props.
+ * @returns {JSX.Element}
+ */
 function TimelineItem({ item }: { item: HistoryItem }) {
   const isIncident = item.type === "incident";
   const isOngoing = !item.ended_at;
@@ -73,11 +97,22 @@ function TimelineItem({ item }: { item: HistoryItem }) {
   );
 }
 
+/**
+ * Full status history page for a given user.
+ *
+ * Fetches the combined incident and maintenance timeline and renders it as a vertical timeline.
+ * Links back to the public status page for the same user.
+ *
+ * @returns {JSX.Element}
+ */
 export default function HistoryPage() {
   const params = useParams<{ userId: string }>();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [error, setError] = useState("");
 
+  /**
+   * Fetches the status history from the API and stores it in state.
+   */
   const refresh = useCallback(async () => {
     try {
       const res = await api.getHistory(params.userId);
